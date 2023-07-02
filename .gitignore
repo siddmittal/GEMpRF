@@ -1,3 +1,6 @@
+# Ignore locally extracted datasets
+local-extracted-datasets*
+
 # Prerequisites
 *.d
 
