@@ -3,11 +3,14 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 import scipy.stats as st
 from scipy.io import loadmat
+import os
 
 maxEcc = 9
 
 # load the stim images
-params = loadmat('./fffFit.mat')['params'][0]
+script_directory = os.path.dirname(os.path.abspath(__file__))
+fffFit_path = os.path.join(script_directory, 'fffFit.mat')
+params = loadmat(fffFit_path)['params'][0]
 window = params['stim'][0]['stimwindow'][0][0].flatten().reshape(101, 101).astype('bool')
 stimImages = params['analysis'][0]['allstimimages'][0][0].T
 stimImagesUnConv = params['analysis'][0]['allstimimages_unconvolved'][0][0].T
@@ -44,6 +47,14 @@ def f(x, y, s):
 
     return xx, kern1dx, kern1dy, covMap
 
+# Sid's test function to display
+def displayInfo(valueToDisplay, title):    
+    plt.figure()  # Open a new plot window
+    plt.imshow(valueToDisplay, cmap='gray')
+    plt.axis('off')    
+    plt.title(title)
+    plt.show()
+
 
 # the TC
 def g(x, y, s):
@@ -51,8 +62,10 @@ def g(x, y, s):
     X0, Y0 = np.meshgrid(xx, xx)
 
     pRF = np.exp(((x - X0)**2 + (y - Y0)**2) / (-2 * s**2))
+    displayInfo(pRF, 'pRF')
 
     tc = pRF[window].dot(stimImages)
+    displayInfo(stimImages, 'stimImages')
     tc /= tc.max()
 
     return tc, np.linspace(0, len(stimImages.T) * 2, len(stimImages.T))
