@@ -23,7 +23,7 @@ def extract_zip_file(zip_file_path):
 
     print(f"Successfully extracted '{zip_file_path}' to '{extracted_datasets_folder}'.")
 
-# Replace 'zip_file_path' with the actual path to your zip file
-zip_file_path = "./../../DATASETS/sid-prf-fmri-data.zip"
 
-extract_zip_file(zip_file_path)
+
+def create_local_folder_and_extract_data(zip_file_path):
+    extract_zip_file(zip_file_path)
