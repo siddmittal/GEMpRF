@@ -5,6 +5,7 @@ from matplotlib.path import Path
 import nibabel as nib
 from scipy.ndimage import zoom
 from scipy import integrate
+from hrf_generator_script import spm_hrf_compat
 import math
 
 # Meshgrid generator for Gaussian
@@ -76,7 +77,7 @@ GRID_SIZE_Y = 4
 DESIRED_STIMULUS_SIZE = 101
 SIGMA = 2
 NOISE_STD_DEV = 0.1 
-STIMULUS_SIZE_IN_DEGREES = 2
+STIMULUS_SIZE_IN_DEGREES = 9
 
 ##---Load voxels data (BOLD)
 bold_response_file_path = r"D:\code\sid-git\fmri\local-extracted-datasets\sid-prf-fmri-data/sub-sidtest_ses-001_task-bar_run-0102avg_hemi-L_bold.nii.gz"
@@ -88,6 +89,7 @@ bold_response_data = bold_response_data.reshape(-1, bold_response_data.shape[-1]
 stimulus_file_path = r"D:\code\sid-git\fmri\local-extracted-datasets\sid-prf-fmri-data/task-bar_apertures.nii.gz"
 stimulus_img = nib.load(stimulus_file_path)
 stimulus_data = stimulus_img.get_fdata()
+
 
 ##---Resample Stimulus
 original_stimulus_shape = stimulus_data.shape # (1024, 1024, 1, 300)
@@ -111,14 +113,30 @@ xy_mask = np.sqrt(meshgrid_X**2 + meshgrid_Y**2) <= STIMULUS_SIZE_IN_DEGREES
 X_stim = meshgrid_X[xy_mask]
 Y_stim = meshgrid_Y[xy_mask]
 
+#dummy - to get the timecourse lenth
+dummy_2d_gaussian = generate_2d_gaussian(meshgrid_X, meshgrid_Y, SIGMA, 0, 0)
+timecourse_length = len(generate_pixel_location_time_course(dummy_2d_gaussian, resampled_stimulus_data))
+
+# Get HRF Curve
+hrf_t = np.linspace(0,30,31)
+# hrf_t = np.linspace(0,timecourse_length,timecourse_length+1)
+hrf_curve = spm_hrf_compat(hrf_t) 
+plot_timecourse(hrf_curve, "HRF Curve")        
+
 # Create Expected Responses Grid: Traverse through all locations of the defined grid
 for x in range(GRID_SIZE_X):
     for y in range(GRID_SIZE_Y):
         Z = generate_2d_gaussian(meshgrid_X, meshgrid_Y, SIGMA, x, y)
         pixel_location_timecourse = generate_pixel_location_time_course(Z, resampled_stimulus_data)
         pixel_location_timecourse /= pixel_location_timecourse.max()
+        r_t = np.convolve(pixel_location_timecourse, hrf_curve, mode='full')[:len(pixel_location_timecourse)]         
         expected_timecourses_grid.append(pixel_location_timecourse)
-        plot_timecourse(pixel_location_timecourse, f"Expected timecourse - ({x},{y})")
+        plt.figure()
+        plt.plot(pixel_location_timecourse, '-') 
+        plt.plot(r_t)
+        plt.show()
+        print('done')
+
 
 # Generate simulated Voxels responses (for tests: noisy version of expected responses)        
 for idx in range(50):
@@ -128,6 +146,6 @@ for idx in range(50):
     # plot_timecourse(noisy_timecourse, f"Simulated timecourse - ({idx}), chose from Expected - {expected_response_to_choose_from_idx}")
 
 # Matching - find best matching for the voxel responses within the expected response grid
-matched_indices = match_voxel_responses_to_expected_pixel_postion_timecourses(simulated_measured_timecourses, expected_timecourses_grid)
+# matched_indices = match_voxel_responses_to_expected_pixel_postion_timecourses(simulated_measured_timecourses, expected_timecourses_grid)
 
 print("Done!")

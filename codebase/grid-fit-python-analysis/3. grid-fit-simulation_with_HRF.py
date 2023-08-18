@@ -5,6 +5,7 @@ from matplotlib.path import Path
 import nibabel as nib
 from scipy.ndimage import zoom
 from scipy import integrate
+from hrf_generator_script import spm_hrf_compat
 import math
 
 # Meshgrid generator for Gaussian
@@ -48,6 +49,17 @@ def plot_timecourse(timecourse_data, title):
     plt.grid()
     plt.show()
 
+#Convolution
+def valid_convolution(larger_array, smaller_array):    
+    result_length = larger_array.shape[0] - smaller_array.shape[0] + 1
+    convolution_result = np.zeros(result_length)
+
+    for i in range(result_length):
+        convolution_result[i] = np.sum(larger_array[i:i + smaller_array.shape[0]] * smaller_array)
+    
+    return convolution_result
+
+
 # Grid fit: Find the best fit for the measured responses within the array of expected responses (grid)
 def match_voxel_responses_to_expected_pixel_postion_timecourses(measured_voxel_timecourses, expected_responses_grid):
     matched_indices = []  # List to store the indices of best-matched expected responses for each measured response
@@ -76,7 +88,7 @@ GRID_SIZE_Y = 4
 DESIRED_STIMULUS_SIZE = 101
 SIGMA = 2
 NOISE_STD_DEV = 0.1 
-STIMULUS_SIZE_IN_DEGREES = 2
+STIMULUS_SIZE_IN_DEGREES = 9
 
 ##---Load voxels data (BOLD)
 bold_response_file_path = r"D:\code\sid-git\fmri\local-extracted-datasets\sid-prf-fmri-data/sub-sidtest_ses-001_task-bar_run-0102avg_hemi-L_bold.nii.gz"
@@ -89,7 +101,8 @@ stimulus_file_path = r"D:\code\sid-git\fmri\local-extracted-datasets\sid-prf-fmr
 stimulus_img = nib.load(stimulus_file_path)
 stimulus_data = stimulus_img.get_fdata()
 
-##---Resample Stimulus
+
+##---Resample StimulusO
 original_stimulus_shape = stimulus_data.shape # (1024, 1024, 1, 300)
 resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE, DESIRED_STIMULUS_SIZE, original_stimulus_shape[2])
 resampling_factors = (
@@ -111,14 +124,29 @@ xy_mask = np.sqrt(meshgrid_X**2 + meshgrid_Y**2) <= STIMULUS_SIZE_IN_DEGREES
 X_stim = meshgrid_X[xy_mask]
 Y_stim = meshgrid_Y[xy_mask]
 
+# Get HRF Curve
+t = np.linspace(0,30,31)
+hrf_curve = spm_hrf_compat(t) 
+
 # Create Expected Responses Grid: Traverse through all locations of the defined grid
 for x in range(GRID_SIZE_X):
     for y in range(GRID_SIZE_Y):
         Z = generate_2d_gaussian(meshgrid_X, meshgrid_Y, SIGMA, x, y)
         pixel_location_timecourse = generate_pixel_location_time_course(Z, resampled_stimulus_data)
         pixel_location_timecourse /= pixel_location_timecourse.max()
+        r_t = np.convolve(pixel_location_timecourse, hrf_curve, mode='valid')   
+        r_t_new = valid_convolution(pixel_location_timecourse, hrf_curve)  
         expected_timecourses_grid.append(pixel_location_timecourse)
-        plot_timecourse(pixel_location_timecourse, f"Expected timecourse - ({x},{y})")
+        plt.figure()
+        plt.plot(pixel_location_timecourse, '-')
+        plt.plot(r_t_new, '*')
+        plt.plot(15 + np.arange(len(r_t_new)), r_t_new)
+        plt.show()
+        # plot_timecourse(pixel_location_timecourse, f"Expected timecourse - ({x},{y})")        
+        # plot_timecourse(r_t, f"r_t timecourse - ({x},{y})")
+        # plot_timecourse(r_t_new, f"r_t_new timecourse - ({x},{y})")
+        print('done')
+
 
 # Generate simulated Voxels responses (for tests: noisy version of expected responses)        
 for idx in range(50):
