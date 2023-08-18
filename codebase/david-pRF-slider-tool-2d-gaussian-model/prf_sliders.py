@@ -62,10 +62,10 @@ def g(x, y, s):
     X0, Y0 = np.meshgrid(xx, xx)
 
     pRF = np.exp(((x - X0)**2 + (y - Y0)**2) / (-2 * s**2))
-    displayInfo(pRF, 'pRF')
+    # displayInfo(pRF, 'pRF')
 
     tc = pRF[window].dot(stimImages)
-    displayInfo(stimImages, 'stimImages')
+    # displayInfo(stimImages, 'stimImages')
     tc /= tc.max()
 
     return tc, np.linspace(0, len(stimImages.T) * 2, len(stimImages.T))
