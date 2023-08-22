@@ -5,8 +5,13 @@ from matplotlib.path import Path
 import nibabel as nib
 from scipy.ndimage import zoom
 from scipy import integrate
+import math, sys
+from pathlib import Path
+
+# HRF Generator
+hrf_module_path = (Path(__file__).resolve().parent / '../external-packages/nipy-hrf-generator').resolve()
+sys.path.append(str(hrf_module_path))
 from hrf_generator_script import spm_hrf_compat
-import math
 
 # Meshgrid generator for Gaussian
 def get_meshgrid_for_gaussian(stimulus_size_in_degrees, stimulus_frame_size):

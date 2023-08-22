@@ -5,11 +5,16 @@ from matplotlib.path import Path
 import nibabel as nib
 from scipy.ndimage import zoom
 from scipy import integrate
-from hrf_generator_script import spm_hrf_compat
-import math
-import os
+import os, sys
 from sklearn.linear_model import LinearRegression
 from scipy.signal import butter, filtfilt
+
+from pathlib import Path
+
+# HRF Generator
+hrf_module_path = (Path(__file__).resolve().parent / '../external-packages/nipy-hrf-generator').resolve()
+sys.path.append(str(hrf_module_path))
+from hrf_generator_script import spm_hrf_compat
 
 # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
 script_directory = os.path.dirname(os.path.abspath(__file__))
