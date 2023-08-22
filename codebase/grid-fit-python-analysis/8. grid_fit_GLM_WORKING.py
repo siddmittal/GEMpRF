@@ -140,11 +140,13 @@ def get_y_hat(voxel_signal, model_signal):
         # otherwise stacking will give an error
         model_signal = model_signal[:, np.newaxis]
 
+    # Predictors
     # intercept = np.ones((model_signal.size, 1))
     trends = np.vstack([np.linspace(0, 1, len(voxel_signal)) ** i for i in range(8)]).T
     X = np.hstack((model_signal, trends))
     betas = np.linalg.inv(X.T @ X) @ X.T @ voxel_signal
 
+    #Estimated y (y_hat): We will compute the MSE between this estimated "y_hat" and the observed/measured "y" (voxel_signal)
     y_hat = X@betas
 
     return y_hat
