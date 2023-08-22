@@ -3,8 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import nibabel as nib
 from scipy.ndimage import zoom
+import os, sys
+
+from pathlib import Path
+
+# HRF Generator
+hrf_module_path = (Path(__file__).resolve().parent / '../external-packages/nipy-hrf-generator').resolve()
+sys.path.append(str(hrf_module_path))
 from hrf_generator_script import spm_hrf_compat
-import os
 
 # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
 script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -134,8 +140,9 @@ def get_y_hat(voxel_signal, model_signal):
         # otherwise stacking will give an error
         model_signal = model_signal[:, np.newaxis]
 
-    intercept = np.ones((model_signal.size, 1))
-    X = np.hstack((intercept, model_signal))
+    # intercept = np.ones((model_signal.size, 1))
+    trends = np.vstack([np.linspace(0, 1, len(voxel_signal)) ** i for i in range(8)]).T
+    X = np.hstack((model_signal, trends))
     betas = np.linalg.inv(X.T @ X) @ X.T @ voxel_signal
 
     y_hat = X@betas
