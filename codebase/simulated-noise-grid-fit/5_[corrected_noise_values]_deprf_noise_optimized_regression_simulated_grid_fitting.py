@@ -95,16 +95,20 @@ class ModelsGrid:
 
     def generate_model_responses(self):
         self._generate_meshgrid()
+        test_grid_points_x = np.linspace(-self.stimulus.size_in_degrees, self.stimulus.size_in_degrees, self.grid_size_x)
+        test_grid_points_y = np.linspace(-self.stimulus.size_in_degrees, self.stimulus.size_in_degrees, self.grid_size_y)
+        interpolted_meshgrid_X, interpolted_meshgrid_Y = np.meshgrid(test_grid_points_x, test_grid_points_y)
+        
         # Create Expected Responses Grid: Traverse through all locations of the defined grid
-        for x in range(self.grid_size_x):
-            for y in range(self.grid_size_y):
-                Z = self._generate_2d_gaussian(mean_x= x, mean_y= y)
+        for row in range(self.grid_size_y):
+            for col in range(self.grid_size_x):
+                Z = self._generate_2d_gaussian(mean_x= interpolted_meshgrid_X[row][col], mean_y= interpolted_meshgrid_Y[row][col])
                 pixel_location_timecourse = self._generate_pixel_location_time_course(Z)
                 pixel_location_timecourse /= pixel_location_timecourse.max()
                 r_t = np.convolve(pixel_location_timecourse, self.hrf_curve, mode='full')[:len(pixel_location_timecourse)]      
-                expected_receptive_field_reponse = ReceptiveFieldResponse(x=x, y=y, timecourse=r_t)  
+                expected_receptive_field_reponse = ReceptiveFieldResponse(x=row, y=col, timecourse=r_t)  
                 #self.data.append(expected_receptive_field_reponse)
-                self.data[y][x] = expected_receptive_field_reponse
+                self.data[row][col] = expected_receptive_field_reponse
 
 # define noise levels in percentages
 class NoiseLevels:
@@ -326,7 +330,7 @@ def run_grid_fit_simulation_program():
         signal_idx_y = flattened_signal_idx - (signal_idx_x * nCols_grid)
         matched_signal_location = (grid.data[signal_idx_x][signal_idx_y].x, grid.data[signal_idx_x][signal_idx_y].y)
         if target_synthesizer_location == matched_signal_location:
-            grid_fitting_results[target_synthesizer_location[1]][target_synthesizer_location[0]] += 1  # Note the swap of indices
+            grid_fitting_results[target_synthesizer_location[0]][target_synthesizer_location[1]] += 1  # Note the swap of indices
 
     # Normalize results
     grid_fitting_results = np.array(grid_fitting_results) / synthesis_ratio
