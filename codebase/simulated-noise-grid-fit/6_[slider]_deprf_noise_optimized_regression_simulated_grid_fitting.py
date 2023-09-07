@@ -69,7 +69,7 @@ class ModelsGrid:
     def _generate_meshgrid(self):
         x = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.data.shape[0])
         y = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.data.shape[1])
-        self.meshgrid_X, self.meshgrid_Y  = np.meshgrid(x, y)
+        self.meshgrid_X, self.meshgrid_Y  = np.meshgrid(x, y, indexing='ij') #NOTE: using indexing='ij'
 
     def _generate_2d_gaussian(self, mean_x, mean_y):                    
         mean_corrdinates = [mean_x, mean_y]        
@@ -266,123 +266,16 @@ class OLS:
         return best_fit_proj
 
 
-
-
-##############################-----------PROGRAM-----------------------#################################
-# def update_plot(vall):
-#     # Get slider values
-#     desired_low_freq_noise_level = low_freq_noise_slider.val
-#     desired_system_noise_level = system_noise_slider.val
-#     desired_physiological_noise_level = physiological_noise_slider.val
-#     desired_task_noise_level = task_noise_slider.val
-#     desired_temporal_noise_level = temporal_noise_slider.val
-
-    # # Variables
-    # nCols_grid = 10
-    # nRows_grid = 10
-    # synthesis_ratio=3
-
-    # # Load stimulus
-    # stimulus = Stimulus("../../local-extracted-datasets/sid-prf-fmri-data/task-bar_apertures.nii.gz", size_in_degrees=9)
-    # stimulus.data = stimulus.resample_stimulus_data((101, 101, stimulus.data.shape[2]))
-
-    # # HRF Curve
-    # hrf_t = np.linspace(0,30,31)
-    # hrf_curve = spm_hrf_compat(hrf_t) 
-
-    # # Expected responses Grid    
-    # grid = ModelsGrid(grid_size_x = nCols_grid
-    #              , grid_size_y = nRows_grid
-    #              , sigma = 2
-    #              , stimulus= stimulus
-    #              , hrf_curve = hrf_curve)
-    # grid.generate_model_responses()
-
-    # # define desired noise levels
-    # noise_levels = NoiseLevels(desired_low_freq_noise_level
-    #                            , desired_system_noise_level
-    #                            , desired_physiological_noise_level
-    #                            , desired_task_noise_level
-    #                            , desired_temporal_noise_level)
-    
-    # # generate synthetic data    
-    # data_synthesizer = SynthesizedDataGenerator(noise_levels=noise_levels, source_data = grid.data, synthesis_ratio=synthesis_ratio, TR=1)
-    # noisy_synthetic_data = data_synthesizer.generate_synthetic_data()
-    
-    # # Data matching
-    # grid_timecourses = [item.timecourse for row in grid.data for item in row]
-    # data_synthesizer_timecourses =[item.timecourse for item in data_synthesizer.data]
-
-    # ols = OLS(modelled_signals=grid_timecourses
-    #                            , measured_signals=data_synthesizer_timecourses
-    #                            )
-    # best_fit_proj = ols.compute_proj_squared()
-
-    # # Analyze fitting results
-    # grid_fitting_results = [[0 for _ in range(nCols_grid)] for _ in range(nRows_grid)]
-    # for i in range(len(best_fit_proj)):
-    #     target_idx = i
-    #     target_synthesizer_location = (noisy_synthetic_data[target_idx].x, noisy_synthetic_data[target_idx].y)
-    #     flattened_signal_idx = best_fit_proj[i]
-    #     signal_idx_x = math.floor(flattened_signal_idx / nCols_grid)
-    #     signal_idx_y = flattened_signal_idx - (signal_idx_x * nCols_grid)
-    #     matched_signal_location = (grid.data[signal_idx_x][signal_idx_y].x, grid.data[signal_idx_x][signal_idx_y].y)
-    #     if target_synthesizer_location == matched_signal_location:
-    #         grid_fitting_results[target_synthesizer_location[1]][target_synthesizer_location[0]] += 1  # Note the swap of indices
-
-    # # Normalize results
-    # grid_fitting_results = np.array(grid_fitting_results) / synthesis_ratio
-
-    # # Test
-    # original_signal = grid.data[0][0].timecourse
-    # noisy_signal = noisy_synthetic_data[0].timecourse
-    # plt.figure(1)
-    # plt.plot(original_signal)
-    # plt.plot(noisy_signal)
-    # plt.title('Original vs. Noisy Signal')
-    # plt.xlabel('Time')
-    # plt.ylabel('Signal Amplitude')
-    
-    # # Set the color mapping range
-    # vmin = np.min(grid_fitting_results)  # Minimum value for color mapping
-    # vmax = np.max(grid_fitting_results)  # Maximum value for color mapping
-
-    # # Create a heatmap plot
-    # plt.figure(2)
-    # plt.imshow(grid_fitting_results, cmap='hot', origin='lower', extent=[0, nCols_grid, 0, nRows_grid], vmin=vmin, vmax=vmax)
-
-    # # Annotate each box with its value
-    # for i in range(nRows_grid):
-    #     for j in range(nCols_grid):
-    #         plt.text(j + 0.5, i + 0.5, f"{grid_fitting_results[i][j]:.2f}", color='black', ha='center', va='center')
-
-    # # Customize grid lines at integer values
-    # plt.xticks(range(nCols_grid))
-    # plt.yticks(range(nRows_grid))
-    # plt.grid(which='both', color='gray', linestyle='-', linewidth=1)
-
-    # # Add labels    
-    # plt.xlabel('Columns')
-    # plt.ylabel('Rows')
-    # plt.title('Normalized 2D Location Prediction Heatmap')
-
-    # # Show the plot
-    # plt.colorbar(label='Normalized Value')
-    # plt.show()
-
-    # print('Program finished !')
-    
-
 ##############################---Sliders---#######################
-
-
 class NoiseLevelAdjustmentApp:
-    def __init__(self):
-        self.desired_low_freq_noise_level = 2
-        self.desired_system_noise_level = 2
-        self.desired_physiological_noise_level = 2
-        self.desired_task_noise_level = 2
-        self.desired_temporal_noise_level = 2            
+    def __init__(self, stimulus):
+        self.stimulus = stimulus
+        self.grid = None
+        self.desired_low_freq_noise_level = 0.4
+        self.desired_system_noise_level = 0.3
+        self.desired_physiological_noise_level = 0.1
+        self.desired_task_noise_level = 0.2
+        self.desired_temporal_noise_level = 0.3            
         self.nCols_grid = 10
         self.nRows_grid = 10
         self.synthesis_ratio = 3
@@ -395,19 +288,19 @@ class NoiseLevelAdjustmentApp:
 
         # Create sliders and "Recompute" button in the main figure
         self.low_freq_noise_slider_ax = self.fig.add_axes([0.15, 0.01, 0.25, 0.02])
-        self.low_freq_noise_slider = Slider(self.low_freq_noise_slider_ax, 'Low Freq Noise', 0, 10, valinit=self.desired_low_freq_noise_level)
+        self.low_freq_noise_slider = Slider(self.low_freq_noise_slider_ax, 'Low Freq Noise', 0.1, 10, valinit=self.desired_low_freq_noise_level)
 
         self.system_noise_slider_ax = self.fig.add_axes([0.15, 0.04, 0.25, 0.02])
-        self.system_noise_slider = Slider(self.system_noise_slider_ax, 'System Noise', 0, 10, valinit=self.desired_system_noise_level)
+        self.system_noise_slider = Slider(self.system_noise_slider_ax, 'System Noise', 0.1, 10, valinit=self.desired_system_noise_level)
 
         self.physiological_noise_slider_ax = self.fig.add_axes([0.15, 0.07, 0.25, 0.02])
-        self.physiological_noise_slider = Slider(self.physiological_noise_slider_ax, 'Physiological Noise', 0, 10, valinit=self.desired_physiological_noise_level)
+        self.physiological_noise_slider = Slider(self.physiological_noise_slider_ax, 'Physiological Noise', 0.1, 10, valinit=self.desired_physiological_noise_level)
 
         self.task_noise_slider_ax = self.fig.add_axes([0.15, 0.10, 0.25, 0.02])
-        self.task_noise_slider = Slider(self.task_noise_slider_ax, 'Task Noise', 0, 10, valinit=self.desired_task_noise_level)
+        self.task_noise_slider = Slider(self.task_noise_slider_ax, 'Task Noise', 0.1, 10, valinit=self.desired_task_noise_level)
 
         self.temporal_noise_slider_ax = self.fig.add_axes([0.15, 0.13, 0.25, 0.02])
-        self.temporal_noise_slider = Slider(self.temporal_noise_slider_ax, 'Temporal Noise', 0, 10, valinit=self.desired_temporal_noise_level)
+        self.temporal_noise_slider = Slider(self.temporal_noise_slider_ax, 'Temporal Noise', 0.1, 10, valinit=self.desired_temporal_noise_level)
 
         recompute_button_ax = self.fig.add_axes([0.8, 0.01, 0.1, 0.04])
         recompute_button = Button(recompute_button_ax, 'Recompute')
@@ -434,21 +327,19 @@ class NoiseLevelAdjustmentApp:
 
     def compute_probability_density(self):
         self.update_status("computing data...")
-        # Load stimulus
-        stimulus = Stimulus("../../local-extracted-datasets/sid-prf-fmri-data/task-bar_apertures.nii.gz", size_in_degrees=9)
-        stimulus.data = stimulus.resample_stimulus_data((101, 101, stimulus.data.shape[2]))
 
         # HRF Curve
         hrf_t = np.linspace(0, 30, 31)
         hrf_curve = spm_hrf_compat(hrf_t)
 
         # Expected responses Grid
-        grid = ModelsGrid(grid_size_x=self.nCols_grid
-                          , grid_size_y=self.nRows_grid
-                          , sigma=2
-                          , stimulus=stimulus
-                          , hrf_curve=hrf_curve)
-        grid.generate_model_responses()
+        if(self.grid is None):
+            self.grid = ModelsGrid(grid_size_x=self.nCols_grid
+                            , grid_size_y=self.nRows_grid
+                            , sigma=2
+                            , stimulus=stimulus
+                            , hrf_curve=hrf_curve)
+            self.grid.generate_model_responses()
 
         # define desired noise levels
         noise_levels = NoiseLevels(self.desired_low_freq_noise_level
@@ -458,11 +349,11 @@ class NoiseLevelAdjustmentApp:
                                     , self.desired_temporal_noise_level)
 
         # generate synthetic data
-        data_synthesizer = SynthesizedDataGenerator(noise_levels=noise_levels, source_data=grid.data, synthesis_ratio=self.synthesis_ratio, TR=1)
+        data_synthesizer = SynthesizedDataGenerator(noise_levels=noise_levels, source_data=self.grid.data, synthesis_ratio=self.synthesis_ratio, TR=1)
         noisy_synthetic_data = data_synthesizer.generate_synthetic_data()
 
         # Data matching
-        grid_timecourses = [item.timecourse for row in grid.data for item in row]
+        grid_timecourses = [item.timecourse for row in self.grid.data for item in row]
         data_synthesizer_timecourses = [item.timecourse for item in data_synthesizer.data]
 
         ols = OLS(modelled_signals=grid_timecourses
@@ -478,7 +369,7 @@ class NoiseLevelAdjustmentApp:
             flattened_signal_idx = best_fit_proj[i]
             signal_idx_x = math.floor(flattened_signal_idx / self.nCols_grid)
             signal_idx_y = flattened_signal_idx - (signal_idx_x * self.nCols_grid)
-            matched_signal_location = (grid.data[signal_idx_x][signal_idx_y].x, grid.data[signal_idx_x][signal_idx_y].y)
+            matched_signal_location = (self.grid.data[signal_idx_x][signal_idx_y].x, self.grid.data[signal_idx_x][signal_idx_y].y)
             if target_synthesizer_location == matched_signal_location:
                 grid_fitting_results[target_synthesizer_location[1]][target_synthesizer_location[0]] += 1  # Note the swap of indices
 
@@ -486,7 +377,7 @@ class NoiseLevelAdjustmentApp:
         grid_fitting_results = np.array(grid_fitting_results) / self.synthesis_ratio
         self.update_status("Data computed !!!")
 
-        return grid_fitting_results, grid.data[0][0].timecourse, noisy_synthetic_data[0].timecourse
+        return grid_fitting_results, self.grid.data[0][0].timecourse, noisy_synthetic_data[0].timecourse
 
     def update_plot(self, val):
         self.update_status("updating plot...")
@@ -537,5 +428,11 @@ class NoiseLevelAdjustmentApp:
         self.update_status("Recomputation done !!!")
 
 if __name__ == "__main__":
-    app = NoiseLevelAdjustmentApp()
+    # Load stimulus
+    stimulus = Stimulus("../../local-extracted-datasets/sid-prf-fmri-data/task-bar_apertures.nii.gz", size_in_degrees=9)
+    stimulus.data = stimulus.resample_stimulus_data((101, 101, stimulus.data.shape[2]))
+
+    # compute grid here too
+
+    app = NoiseLevelAdjustmentApp(stimulus)
 
