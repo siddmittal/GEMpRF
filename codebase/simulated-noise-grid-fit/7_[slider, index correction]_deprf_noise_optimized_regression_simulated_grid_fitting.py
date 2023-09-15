@@ -52,13 +52,13 @@ class ModelsGrid:
     def __init__(self
                  , grid_nRows
                  , grid_nCols
-                 , sigma
+                 , pRF_size_sigma
                  , stimulus : Stimulus
                  , hrf_curve
                  ):
         self.grid_nRows = grid_nRows
         self.grid_nCols = grid_nCols
-        self.sigma = sigma        
+        self.pRF_size_sigma = pRF_size_sigma        
         self.stimulus = stimulus
         self.gaussian_meshgrid_X = None
         self.gaussian_meshgrid_Y = None
@@ -81,7 +81,7 @@ class ModelsGrid:
 
     def _generate_2d_gaussian(self, mean_x, mean_y):                    
         mean_corrdinates = [mean_x, mean_y]        
-        Z = np.exp(-(self.gaussian_meshgrid_X - mean_corrdinates[0])**2 / (2 * self.sigma**2)) * np.exp(-(self.gaussian_meshgrid_Y - mean_corrdinates[1])**2 / (2 * self.sigma**2))
+        Z = np.exp(-(self.gaussian_meshgrid_X - mean_corrdinates[0])**2 / (2 * self.pRF_size_sigma**2)) * np.exp(-(self.gaussian_meshgrid_Y - mean_corrdinates[1])**2 / (2 * self.pRF_size_sigma**2))
         return Z
     
     # Generate the timecourse for a Gaussian Curve (for a particular pixel location)
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     nCols_grid = 101
     grid = ModelsGrid(grid_nRows=nRows_grid
                     , grid_nCols=nCols_grid
-                    , sigma=2
+                    , pRF_size_sigma=2
                     , stimulus=stimulus
                     , hrf_curve=hrf_curve)
     grid.generate_model_responses()
