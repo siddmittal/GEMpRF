@@ -33,3 +33,19 @@ local-extracted-datasets*
 *.exe
 *.out
 *.app
+*.pdb
+*.exp
+*.cache
+*.deps
+
+# Debug folder
+*.tlog
+*.ilk
+*.recipe
+*.log
+*.ipch
+*.vsidx
+*.lock
+codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v17/.suo
+*.db
+*.user
