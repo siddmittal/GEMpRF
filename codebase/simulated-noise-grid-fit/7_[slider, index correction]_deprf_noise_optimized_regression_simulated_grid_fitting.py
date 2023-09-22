@@ -10,44 +10,16 @@ from typing import List
 import math
 from matplotlib.widgets import Slider, Button, TextBox
 
-# HRF Generator
-hrf_module_path = (Path(__file__).resolve().parent / '../external-packages/nipy-hrf-generator').resolve()
-sys.path.append(str(hrf_module_path))
-from hrf_generator_script import spm_hrf_compat
+# Local Imports
+from codebase.oprf.standard.prf_stimulus import Stimulus
+from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from codebase.oprf.standard.prf_ordinary_least_square import OLS
+from codebase.oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
+from codebase.oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
+from codebase.oprf.analysis.prf_synthetic_data_generator import NoiseLevels
 
-# DeepRF module
-deeprf_module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../external-packages/DeepRF-main'))
-sys.path.append(deeprf_module_path)
-from data_synthetic import *
-import data_synthetic as deeprf_data_synthetic
 
-class ReceptiveFieldResponse:
-    def __init__(self, row, col, timecourse):
-        self.row = row
-        self.col= col
-        self.timecourse = timecourse
-
-class Stimulus:
-    def __init__(self, relative_file_path, size_in_degrees):
-        # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
-        script_directory = os.path.dirname(os.path.abspath(__file__))
-        stimulus_file_path = os.path.join(script_directory, relative_file_path)
-        stimulus_img = nib.load(stimulus_file_path)
-        self.size_in_degrees = size_in_degrees
-        self.data = stimulus_img.get_fdata()
-
-    def resample_stimulus_data(self
-                               , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])
-                               ):  
-        original_stimulus_shape = self.data.shape # e.g. (1024, 1024, 1, 300)        
-        resampling_factors = (
-        resampled_stimulus_shape[0] / (original_stimulus_shape[0] -1),
-        resampled_stimulus_shape[1] / (original_stimulus_shape[1] - 1),
-        1  # Keep the number of time points unchanged
-        )   
-        self.data = zoom(self.data.squeeze(), resampling_factors, order=1)
-        return self.data
-
+# This is older version of my Model Grid before I created the newer generic version called "QuadrilateralSignalsSpace"
 class ModelsGrid:
     def __init__(self
                  , grid_nRows
@@ -69,8 +41,8 @@ class ModelsGrid:
             
     def _generate_meshgrids(self):
         # For Gaussian Meshgrid: This meshgrid must have the same size as the stimulus. The 2D Gaussian curves generated using these X and Y meshgrids are used to model a pRF response
-        gaussian_x_values = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.data.shape[0])
-        gaussian_y_values = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.data.shape[1])
+        gaussian_x_values = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.resampled_data.shape[0])
+        gaussian_y_values = np.linspace( - self.stimulus.size_in_degrees, + self.stimulus.size_in_degrees, self.stimulus.resampled_data.shape[1])
         self.gaussian_meshgrid_X, self.gaussian_meshgrid_Y  = np.meshgrid(gaussian_x_values, gaussian_y_values)
 
         # For Test Locations Grid Meshgrid: These X and Y meshgrids below contains the MEAN POSITIONS for which we would like to generate the "modelled responses". 
@@ -87,12 +59,12 @@ class ModelsGrid:
     # Generate the timecourse for a Gaussian Curve (for a particular pixel location)
     # by taking the Stimulus frames into account
     def _generate_pixel_location_time_course(self, Z):
-        time_points = self.stimulus.data.shape[2]
+        time_points = self.stimulus.resampled_data.shape[2]
         area_under_gaussian = np.zeros(time_points)
 
         for t in range(time_points):
             # Use stimulus_frame_data as a binary mask
-            mask = (self.stimulus.data[:, :, t] > 0).astype(int)
+            mask = (self.stimulus.resampled_data[:, :, t] > 0).astype(int)
             
             # Apply mask to the Gaussian curve
             masked_gaussian = Z * mask
@@ -113,22 +85,9 @@ class ModelsGrid:
                 pixel_location_timecourse /= pixel_location_timecourse.max()
                 r_t = np.convolve(pixel_location_timecourse, self.hrf_curve, mode='full')[:len(pixel_location_timecourse)]      
                 expected_receptive_field_reponse = ReceptiveFieldResponse(row=row, col=col, timecourse=r_t)  
-                self.data[row][col] = expected_receptive_field_reponse                                
+                self.data[row][col] = expected_receptive_field_reponse                                     
 
-# define noise levels in percentages
-class NoiseLevels:
-    def __init__(self
-                 , desired_low_freq_noise_level
-                 , desired_physiological_noise_level
-                 , desired_system_noise_level
-                 , desired_task_noise_level
-                 , desired_temporal_noise_level):
-        self.desired_low_freq_noise_level = desired_low_freq_noise_level
-        self.desired_physiological_noise_level = desired_physiological_noise_level
-        self.desired_system_noise_level = desired_system_noise_level
-        self.desired_task_noise_level = desired_task_noise_level
-        self.desired_temporal_noise_level = desired_temporal_noise_level        
-
+# This is the older version of original "SynthesizedDataGenerator". In this version, I am using DeepRF models but in some of the versions, I am simply using Gaussian Noise
 class SynthesizedDataGenerator:
     def __init__(self
                  , noise_levels : NoiseLevels
@@ -187,70 +146,6 @@ class SynthesizedDataGenerator:
                         index = index + 1
 
             return self.data    
-
-# Ordinary Least Squares (OLS)
-class OLS:
-    def __init__(self
-                 , modelled_signals
-                 , measured_signals : List[ReceptiveFieldResponse]
-                 , type = 'ordinary least squares - simplified'):
-        self.modelled_signals = modelled_signals
-        self.measured_signals = measured_signals
-        self.N = len(modelled_signals[0]) # number of data points in each timecourse
-    
-    def _make_Trends(self, nDCT=3):
-        # Generates trends similar to 'rmMakeTrends' from the 'params' struct in mrVista.    
-        # nDCT: Number of discrete cosine transform components.
-        
-        tf = self.N # this is equal to 300
-        ndct = 2 * nDCT + 1
-        trends = np.zeros((np.sum(tf), np.max([np.sum(ndct), 1])))        
-        
-        tc = np.linspace(0, 2.*np.pi, tf)[:, None]        
-        trends = np.cos(tc.dot(np.arange(0, nDCT + 0.5, 0.5)[None, :]))
-
-        nTrends = trends.shape[1]
-        return trends, nTrends       
-    
-    def _get_orthogonal_trends(self, trends):
-        q, r = np.linalg.qr(trends) # QR decomposition
-        q *= np.sign(q[0, 0]) # sign function returns -1 if x < 0, 0 if x==0, 1 if x > 0
-        return q
-    
-    def _compute_orthonormal_model_signals(self, R):
-        # Calculate orthogonal projection using O = (I - R @ R^T)
-        O = (np.eye(self.N) - R @ R.T) # R: Orthonormal Regressors
-        
-        # compute orthonormal version of the modelled signals
-        total_rows = (len(self.modelled_signals))
-        total_cols = len(self.modelled_signals[0])
-        orthonormalized_modelled_signals =  np.zeros((total_rows, total_cols)) # pre-allocate array
-        for i in range(len(self.modelled_signals)):
-            s = self.modelled_signals[i] #s
-            s = O @ s #s_prime 
-            s /= np.sqrt(s @ s) # orthonormalized_model_signal
-            orthonormalized_modelled_signals[i] = s
-
-        return orthonormalized_modelled_signals
-    
-    # Fitting: Calculate the square of the projection of orthonormal modelled singlas (s_prime) onto targets
-    def compute_proj_squared(self):   
-        trends, _ = self._make_Trends()
-        R = self._get_orthogonal_trends(trends=trends)
-        orthonormal_modelled_signals = self._compute_orthonormal_model_signals(R=R)
-
-        # grid of orthonormal modelled signals
-        grid_s_prime = np.vstack([timecourse for timecourse in orthonormal_modelled_signals]).T
-
-        # grid of measured/simulated target signals
-        grid_y  = np.vstack([timecourse for timecourse in self.measured_signals]).T
-        
-        # (y^T . s_prime)^2
-        proj_squared = (grid_s_prime.T @ grid_y)**2 
-        
-        # find best matches along the rows (vertical axis) of the array
-        best_fit_proj = np.argmax(proj_squared, axis=0)
-        return best_fit_proj
 
 
 ##############################---Sliders---#######################
@@ -415,16 +310,17 @@ class NoiseLevelAdjustmentApp:
 
 if __name__ == "__main__":
     # Load stimulus
-    stimulus = Stimulus("../../local-extracted-datasets/sid-prf-fmri-data/task-bar_apertures.nii.gz", size_in_degrees=9)
-    stimulus.data = stimulus.resample_stimulus_data((101, 101, stimulus.data.shape[2]))
+    #stimulus = Stimulus("../../local-extracted-datasets/sid-prf-fmri-data/task-bar_apertures.nii.gz", size_in_degrees=9)
+    stimulus = Stimulus("D:\\code\\sid-git\\fmri\\local-extracted-datasets\\sid-prf-fmri-data\\task-bar_apertures.nii.gz", size_in_degrees=9)
+    stimulus.compute_resample_stimulus_data((101, 101, stimulus.org_data.shape[2]))
 
     # HRF Curve
     hrf_t = np.linspace(0, 30, 31)
     hrf_curve = spm_hrf_compat(hrf_t)
     
     # Expected responses Grid    
-    nRows_grid = 101
-    nCols_grid = 101
+    nRows_grid = 11
+    nCols_grid = 11
     grid = ModelsGrid(grid_nRows=nRows_grid
                     , grid_nCols=nCols_grid
                     , pRF_size_sigma=2
