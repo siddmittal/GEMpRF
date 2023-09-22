@@ -51,3 +51,4 @@ codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v
 *.user
 /.vs
 *.pyc
+*.pkl

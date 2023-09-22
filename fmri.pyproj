@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{f4061475-8fd4-4e1f-9a09-d09e671c8991}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>codebase\probability-distribution\2_probability_distribution_interactive_[almost working, verification needed for clicked-coordinates].py</StartupFile>
+    <StartupFile>codebase\0011-gpu-simulation-grid-fitting\python-scripts\01.cpu-vs-gpu-test-using-cupy.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -20,7 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="codebase\probability-distribution\1_probability_distribution_histogram_generator.py" />
-    <Compile Include="codebase\0011-gpu-simulation-grid-fitting\python-scripts\2_python-cuda-test.py" />
+    <Compile Include="codebase\0011-gpu-simulation-grid-fitting\python-scripts\01.cpu-vs-gpu-test-using-cupy.py" />
     <Compile Include="codebase\oprf\analysis\prf_synthetic_data_generator.py" />
     <Compile Include="codebase\oprf\external\DeepRF\data_empirical.py" />
     <Compile Include="codebase\oprf\external\DeepRF\data_synthetic.py" />
@@ -141,47 +141,6 @@
     <Compile Include="codebase\__inti__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\FileContentIndex\7c00e4cc-666e-414d-858f-4341352e5c28.vsidx" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\FileContentIndex\read.lock" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\.suo" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\Browse.VC.db" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\AutoPCH\178941832ec1fd9f\EXE_COMMON.ipch" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\AutoPCH\2bc3c1b9443a5cd\KERNEL.ipch" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp.sln" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\FastGridFittingApp.vcxproj" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\FastGridFittingApp.vcxproj.user" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\kernel.cu" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\CudaCompile.read.1u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\CudaCompile.write.1u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\FastGridFittingApp.lastbuildstate" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\link.command.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\link.read.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\link.write.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\link.write.2u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGridFittingApp.exe.recipe" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGridFittingApp.ilk" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGridFittingApp.log" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.exe.recipe" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.ilk" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\CudaCompile.read.1u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\CudaCompile.write.1u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\GridFitting.lastbuildstate" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\link.command.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\link.read.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\link.write.1.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\link.write.2u.tlog" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\kernel.cu-1547884294.deps" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\kernel.cu.cache" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\kernel.cu.obj" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\vc143.pdb" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\FastGridFittingApp.exe" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\FastGridFittingApp.exp" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\FastGridFittingApp.lib" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\FastGridFittingApp.pdb" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\GridFitting.exe" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\GridFitting.exp" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\GridFitting.lib" />
-    <Content Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\GridFitting.pdb" />
     <Content Include="codebase\akcarsten-sample-fmri\00.NOTE by Sid.txt" />
     <Content Include="codebase\akcarsten-sample-fmri\images\Intro_to_fMRI_Data_Part_I_Data_Structure_11_0.png" />
     <Content Include="codebase\akcarsten-sample-fmri\images\Intro_to_fMRI_Data_Part_I_Data_Structure_15_0.png" />
@@ -468,23 +427,6 @@
     <Folder Include="codebase\" />
     <Folder Include="codebase\0011-gpu-simulation-grid-fitting" />
     <Folder Include="codebase\0011-gpu-simulation-grid-fitting\data-files\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\FileContentIndex\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\FileContentIndex\merges\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\AutoPCH\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\AutoPCH\178941832ec1fd9f\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\.vs\FastGridFittingApp\v17\ipch\AutoPCH\2bc3c1b9443a5cd\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\FastGrid.F0F2C504.tlog\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\FastGridFittingApp\x64\Debug\GridFitting.tlog\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\" />
-    <Folder Include="codebase\0011-gpu-simulation-grid-fitting\FastGridFittingApp\x64\Debug\" />
     <Folder Include="codebase\0011-gpu-simulation-grid-fitting\python-scripts" />
     <Folder Include="codebase\akcarsten-sample-fmri" />
     <Folder Include="codebase\akcarsten-sample-fmri\images" />
