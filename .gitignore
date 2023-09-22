@@ -49,3 +49,5 @@ local-extracted-datasets*
 codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v17/.suo
 *.db
 *.user
+/.vs
+*.pyc
