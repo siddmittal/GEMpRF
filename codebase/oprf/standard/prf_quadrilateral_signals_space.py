@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as cp
          
 # Stimulus Class
 from codebase.oprf.standard.prf_stimulus import Stimulus
@@ -96,7 +97,7 @@ class QuadrilateralSignalsSpace:
 
         print("computed model signals....")       
 
-    def generate_model_responses_David(self):
+    def generate_model_responses_DAVID_fast_but_partial(self):
         self._generate_meshgrids()
 
         # apply masking
@@ -123,4 +124,41 @@ class QuadrilateralSignalsSpace:
         # expected_receptive_field_reponse = ReceptiveFieldResponse(row=row, col=col, timecourse=pixel_location_timecourse)  
         # self.data[row][col] = expected_receptive_field_reponse      
 
-        print("computed model signals....")                                                     
+        print("computed model signals....")    
+        
+    def gpu_cupy_generate_model_responses(self):
+        self._generate_meshgrids()
+
+        # apply masking
+        mask = cp.sum(self.stimulus.resampled_data, axis=2) > 0
+
+        # Use mask to keep relevant locations in the meshgrids and the hrf-convolved-stimulus
+        Xm = self.gaussian_meshgrid_X[mask]
+        Ym = self.gaussian_meshgrid_Y[mask]
+        masked_hrf_convolved_stimulus = self.stimulus.resampled_hrf_convolved_data[mask]
+
+        sigma = self.sigma
+
+        # Calculate the 2D Gaussian
+        Xm_cp = cp.asarray(Xm[:, None])
+        Ym_cp = cp.asarray(Ym[:, None])
+        custom_space_meshgrid_X_flat_cp = cp.asarray(self.custom_space_meshgrid_X.flatten()[None, :])
+        custom_space_meshgrid_Y_flat_cp = cp.asarray(self.custom_space_meshgrid_Y.flatten()[None, :])
+
+        pRF = cp.exp(-((Xm_cp - custom_space_meshgrid_X_flat_cp) ** 2 + (Ym_cp - custom_space_meshgrid_Y_flat_cp) ** 2) / (2 * sigma**2))
+
+        # Transpose the pRF for matrix multiplication
+        pRF_T = cp.transpose(pRF)
+
+        # Matrix multiplication
+        #pixel_location_timecourse = pRF_T @ masked_hrf_convolved_stimulus
+        pixel_location_timecourse = pRF_T @ cp.asarray(masked_hrf_convolved_stimulus)
+
+        # Normalize by dividing by the maximum along axis 1
+        max_values = cp.max(pixel_location_timecourse, axis=1)[:, None]
+        pixel_location_timecourse /= max_values
+
+        # debug
+        # plt.plot(pixel_location_timecourse[0].get())
+
+        print("computed model signals....")
