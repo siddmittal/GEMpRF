@@ -151,10 +151,8 @@
     <Content Include="codebase\akcarsten-sample-fmri\LICENSE" />
     <Content Include="codebase\akcarsten-sample-fmri\README.md" />
     <Content Include="codebase\articles\.ipynb_checkpoints\0. Juypter Text Tutorial-checkpoint.ipynb" />
-    <Content Include="codebase\articles\.ipynb_checkpoints\0001-python-book-ppsml-ch-2-checkpoint.ipynb" />
     <Content Include="codebase\articles\.ipynb_checkpoints\meshgrid_tutorial-checkpoint.ipynb" />
     <Content Include="codebase\articles\0. Juypter Text Tutorial.ipynb" />
-    <Content Include="codebase\articles\0001-python-book-ppsml-ch-2.ipynb" />
     <Content Include="codebase\articles\articles-test-data\Jupyter notebook text tutorial result.png" />
     <Content Include="codebase\articles\meshgrid_tutorial.ipynb" />
     <Content Include="codebase\david-pRF-slider-tool-2d-gaussian-model\fffFit.mat" />
