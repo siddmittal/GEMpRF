@@ -12,19 +12,19 @@ from matplotlib.gridspec import GridSpec
 
 
 # HRF Generator
-from codebase.oprf.external.hrf_generator_script import spm_hrf_compat
+from oprf.external.hrf_generator_script import spm_hrf_compat
 
 # Receptive Field Response Class
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
 
 # QuadrilateralSignalsSpace Class
-from codebase.oprf.standard.prf_quadrilateral_signals_space import QuadrilateralSignalsSpace
+from oprf.standard.prf_quadrilateral_signals_space import QuadrilateralSignalsSpace
 
 # DeepRF module
-from codebase.oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic
+from oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic
 
 # Stimlus
-from codebase.oprf.standard.prf_stimulus import Stimulus
+from oprf.standard.prf_stimulus import Stimulus
 
 class LocationHistogram:
     def __init__(self, location_row, location_col):

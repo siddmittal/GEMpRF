@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
 
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from .prf_receptive_field_response import ReceptiveFieldResponse
 
 
 # Ordinary Least Squares (OLS)

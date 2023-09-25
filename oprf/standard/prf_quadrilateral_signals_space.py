@@ -2,10 +2,10 @@ import numpy as np
 import cupy as cp
          
 # Stimulus Class
-from codebase.oprf.standard.prf_stimulus import Stimulus
+from oprf.standard.prf_stimulus import Stimulus
 
 # Receptive Field Response Class
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
 
 class QuadrilateralSignalsSpace:
     def __init__(self

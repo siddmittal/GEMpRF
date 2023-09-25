@@ -1,3 +1,6 @@
+# Add my "oprf" package path
+import sys
+sys.path.append("D:/code/sid-git/fmri/")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,12 +14,12 @@ import math
 from matplotlib.widgets import Slider, Button, TextBox
 
 # Local Imports
-from codebase.oprf.standard.prf_stimulus import Stimulus
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
-from codebase.oprf.standard.prf_ordinary_least_square import OLS
-from codebase.oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
-from codebase.oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
-from codebase.oprf.analysis.prf_synthetic_data_generator import NoiseLevels
+from oprf.standard.prf_stimulus import Stimulus
+from oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from oprf.standard.prf_ordinary_least_square import OLS
+from oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
+from oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
+from oprf.analysis.prf_synthetic_data_generator import NoiseLevels
 
 
 # This is older version of my Model Grid before I created the newer generic version called "QuadrilateralSignalsSpace"

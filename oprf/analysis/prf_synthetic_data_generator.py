@@ -2,8 +2,8 @@ import numpy as np
 from typing import List
 
 # Local Imports
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
-from codebase.oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
+from oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
 
 # define noise levels in percentages
 class NoiseLevels:
