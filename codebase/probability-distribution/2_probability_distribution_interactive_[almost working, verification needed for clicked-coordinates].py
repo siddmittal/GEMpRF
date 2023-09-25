@@ -1,3 +1,6 @@
+# Add my "oprf" package path
+import sys
+sys.path.append("D:/code/sid-git/fmri/")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,16 +15,16 @@ from matplotlib.widgets import Slider, Button, TextBox
 from matplotlib.gridspec import GridSpec
 
 # Local Imports
-from codebase.oprf.standard.prf_stimulus import Stimulus
-from codebase.oprf.analysis.prf_histograms import Histograms
-from codebase.oprf.analysis.prf_histograms import LocationHistogram
-from codebase.oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
-from codebase.oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
-from codebase.oprf.standard.prf_quadrilateral_signals_space import QuadrilateralSignalsSpace
-from codebase.oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
-from codebase.oprf.standard.prf_ordinary_least_square import OLS
-from codebase.oprf.analysis.prf_synthetic_data_generator import SynthesizedDataGenerator
-from codebase.oprf.analysis.prf_synthetic_data_generator import NoiseLevels
+from oprf.standard.prf_stimulus import Stimulus
+from oprf.analysis.prf_histograms import Histograms
+from oprf.analysis.prf_histograms import LocationHistogram
+from oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
+from oprf.external.DeepRF import data_synthetic as deeprf_data_synthetic # DeepRF module
+from oprf.standard.prf_quadrilateral_signals_space import QuadrilateralSignalsSpace
+from oprf.standard.prf_receptive_field_response import ReceptiveFieldResponse
+from oprf.standard.prf_ordinary_least_square import OLS
+from oprf.analysis.prf_synthetic_data_generator import SynthesizedDataGenerator
+from oprf.analysis.prf_synthetic_data_generator import NoiseLevels
 
 ##############################---Sliders---#######################
 class NoiseLevelAdjustmentApp:
