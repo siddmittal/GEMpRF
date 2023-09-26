@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="gaussian_kernel_5.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utils\arrays\Linspace.h" />
+    <ClInclude Include="utils\arrays\Meshgrid.h" />
+    <ClInclude Include="Stimulus\Stimulus.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="utils\arrays\Linspace.cpp" />
+    <ClCompile Include="utils\arrays\Meshgrid.cpp" />
+    <ClCompile Include="Stimulus\Stimulus.cpp" />
+  </ItemGroup>
+</Project>

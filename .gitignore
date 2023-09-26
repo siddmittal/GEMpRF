@@ -52,3 +52,4 @@ codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v
 /.vs
 *.pyc
 *.pkl
+/codebase-cpp/fmri-hpc/x64/Debug
