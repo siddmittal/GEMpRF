@@ -81,12 +81,10 @@ void writeGaussianCurvesToFile(const std::string& dataFolder
 
 int main()
 {
-    const int nStimulusRows = 101;
-    const int nStimulusCols = 101;
-    const int nGaussianRows = nStimulusRows;
-    const int nGaussianCols = nStimulusCols;
-    const int nTestSpaceGridRows = 11;
-    const int nTestSpaceGridCols = 11;
+    const int nStimulusRows = 3;
+    const int nStimulusCols = 3;    
+    const int nQuadrilateralSpaceGridRows = 1; // could be test space or search space (or model signals space)
+    const int nQuadrilateralSpaceGridCols = 1;
 
     // For GAUSSIAN
     Linspace stimulusVisualFieldPointsLinspace(-9.0, 9.0, nStimulusRows);
@@ -94,7 +92,7 @@ int main()
     float* stimulus_vf_points_y = stimulusVisualFieldPointsLinspace.GenerateLinspaceArr();
 
     // For MEANS (i.e. muX and muY)
-    Linspace testspaceVisualFieldPointsLinspace(-9.0, 9.0, nTestSpaceGridRows);
+    Linspace testspaceVisualFieldPointsLinspace(-9.0, 9.0, nQuadrilateralSpaceGridRows);
     float* testspace_vf_points_x = testspaceVisualFieldPointsLinspace.GenerateLinspaceArr(); // values for muX
     float* testspace_vf_points_y = testspaceVisualFieldPointsLinspace.GenerateLinspaceArr(); // values for muY
 
@@ -117,9 +115,9 @@ int main()
     // Memory allocations
     cudaStatus = cudaMalloc((void**)&dev_stimulus_vf_points_x, nStimulusCols * sizeof(float));
     cudaStatus = cudaMalloc((void**)&dev_stimulus_vf_points_y, nStimulusRows * sizeof(float));
-    cudaStatus = cudaMalloc((void**)&dev_testspace_vf_points_x, nTestSpaceGridCols * sizeof(float));
-    cudaStatus = cudaMalloc((void**)&dev_testspace_vf_points_y, nTestSpaceGridRows * sizeof(float));
-    cudaStatus = cudaMalloc((void**)&dev_result_gaussian_curves, (nStimulusRows * nStimulusCols)*(nTestSpaceGridRows * nTestSpaceGridCols) * sizeof(float));
+    cudaStatus = cudaMalloc((void**)&dev_testspace_vf_points_x, nQuadrilateralSpaceGridCols * sizeof(float));
+    cudaStatus = cudaMalloc((void**)&dev_testspace_vf_points_y, nQuadrilateralSpaceGridRows * sizeof(float));
+    cudaStatus = cudaMalloc((void**)&dev_result_gaussian_curves, (nStimulusRows * nStimulusCols)*(nQuadrilateralSpaceGridRows * nQuadrilateralSpaceGridCols) * sizeof(float));
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         goto Error;
@@ -128,8 +126,8 @@ int main()
     // Memory tranfers - host to device
     cudaStatus = cudaMemcpy(dev_stimulus_vf_points_x, stimulus_vf_points_x, nStimulusCols * sizeof(float), cudaMemcpyHostToDevice);
     cudaStatus = cudaMemcpy(dev_stimulus_vf_points_y, stimulus_vf_points_y, nStimulusRows * sizeof(float), cudaMemcpyHostToDevice);
-    cudaStatus = cudaMemcpy(dev_testspace_vf_points_x, testspace_vf_points_x, nTestSpaceGridCols * sizeof(float), cudaMemcpyHostToDevice);
-    cudaStatus = cudaMemcpy(dev_testspace_vf_points_y, testspace_vf_points_y, nTestSpaceGridRows * sizeof(float), cudaMemcpyHostToDevice);   
+    cudaStatus = cudaMemcpy(dev_testspace_vf_points_x, testspace_vf_points_x, nQuadrilateralSpaceGridCols * sizeof(float), cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy(dev_testspace_vf_points_y, testspace_vf_points_y, nQuadrilateralSpaceGridRows * sizeof(float), cudaMemcpyHostToDevice);   
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
         goto Error;
@@ -139,16 +137,16 @@ int main()
     int TX = 3;
     int TY = 3;
     dim3 blockSize(TX, TY); // Equivalent to dim3 blockSize(TX, TY, 1);
-    int bx = (nTestSpaceGridCols + blockSize.x - 1) / blockSize.x;
-    int by = (nTestSpaceGridRows + blockSize.y - 1) / blockSize.y;
+    int bx = (nQuadrilateralSpaceGridCols + blockSize.x - 1) / blockSize.x;
+    int by = (nQuadrilateralSpaceGridRows + blockSize.y - 1) / blockSize.y;
     dim3 gridSize = dim3(bx, by);
     generateGaussian <<<gridSize, blockSize>>> (dev_result_gaussian_curves
         , dev_testspace_vf_points_x
         , dev_testspace_vf_points_y
         , dev_stimulus_vf_points_x
         , dev_stimulus_vf_points_y
-        , nTestSpaceGridRows
-        , nTestSpaceGridCols
+        , nQuadrilateralSpaceGridRows
+        , nQuadrilateralSpaceGridCols
         , nStimulusRows
         , nStimulusCols);
 
@@ -168,8 +166,8 @@ int main()
     }
 
     // Copy the results back to the host
-    float* result_gaussian_curves_host = new float[nTestSpaceGridRows * nTestSpaceGridCols * nStimulusRows * nStimulusCols];
-    cudaStatus = cudaMemcpy(result_gaussian_curves_host, dev_result_gaussian_curves, (nTestSpaceGridRows * nTestSpaceGridCols) * (nStimulusRows * nStimulusCols) * sizeof(float), cudaMemcpyDeviceToHost);
+    float* result_gaussian_curves_host = new float[nQuadrilateralSpaceGridRows * nQuadrilateralSpaceGridCols * nStimulusRows * nStimulusCols];
+    cudaStatus = cudaMemcpy(result_gaussian_curves_host, dev_result_gaussian_curves, (nQuadrilateralSpaceGridRows * nQuadrilateralSpaceGridCols) * (nStimulusRows * nStimulusCols) * sizeof(float), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
         goto Error;
@@ -180,8 +178,8 @@ int main()
         , result_gaussian_curves_host
         , testspace_vf_points_x
         , testspace_vf_points_y
-        , nTestSpaceGridRows
-        , nTestSpaceGridCols
+        , nQuadrilateralSpaceGridRows
+        , nQuadrilateralSpaceGridCols
         , nStimulusRows
         , nStimulusCols
     );
