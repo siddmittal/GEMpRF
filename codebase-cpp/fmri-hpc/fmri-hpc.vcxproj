@@ -77,7 +77,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="gaussian_kernel_5.cu" />
+    <CudaCompile Include="generate_gaussian_curves_main.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Stimulus\Stimulus.h" />
