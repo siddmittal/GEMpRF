@@ -16,8 +16,8 @@
 __constant__  float PI = 3.14159265358979323846;
 
 __global__ void generateGaussian(float* result_gaussian_curves
-    , float* testspace_vf_points_x
-    , float* testspace_vf_points_y
+    , float* modelspace_vf_points_x
+    , float* modelspace_vf_points_y
     , float* stimulus_vf_points_x
     , float* stimulus_vf_points_y
     , int nGaussianRows
@@ -28,12 +28,16 @@ __global__ void generateGaussian(float* result_gaussian_curves
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (row < nGaussianRows && col < nGaussianCols) 
+    if (row < nGaussianRows && col < nGaussianCols)
     {
-        float y_mean = testspace_vf_points_y[row];
-        float x_mean = testspace_vf_points_x[col];
+        float y_mean = modelspace_vf_points_y[row];
+        float x_mean = modelspace_vf_points_x[col];
         float sigma = 2.0;  // Standard deviation
+        int meanPairIdx = row * nGaussianCols + col;
+        int currentGaussianCurveStartIdx = meanPairIdx * (nStimulusCols * nStimulusRows); // (nStimulusCols * nStimulusRows) = single Gaussian curve size
 
+        int gaussIdx = currentGaussianCurveStartIdx;
+        //printf("Thread: (%d, %d), meanPairIdx: %d,  currentGaussianCurveStartIdx: %d\n", row, col, meanPairIdx, currentGaussianCurveStartIdx);
         for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
         {
             for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
@@ -41,7 +45,10 @@ __global__ void generateGaussian(float* result_gaussian_curves
                 float y = stimulus_vf_points_y[stim_vf_row];
                 float x = stimulus_vf_points_x[stim_vf_col];
                 float exponent = -((x - x_mean) * (x - x_mean) + (y - y_mean) * (y - y_mean)) / (2 * sigma * sigma);
-                result_gaussian_curves[(col * nStimulusCols + stim_vf_col) * nGaussianRows * nStimulusCols + row * nStimulusCols + stim_vf_row] = exp(exponent); // / (2 * PI * sigma * sigma);
+                result_gaussian_curves[gaussIdx] = exp(exponent); // / (2 * PI * sigma * sigma);				
+                //printf("Thread: (%d, %d), Ux: %f, Uy: %f, result_gaussian_curves[%d]: %.6e\n", col, row, x_mean, y_mean, gaussIdx, result_gaussian_curves[gaussIdx]);
+
+                gaussIdx++;
             }
         }
     }
@@ -50,27 +57,34 @@ __global__ void generateGaussian(float* result_gaussian_curves
 // Function to write Gaussian curves to text files
 void writeGaussianCurvesToFile(const std::string& dataFolder
     , float* result_gaussian_curves
-    , float* testspace_vf_points_x
-    , float* testspace_vf_points_y
-    , int nTestSpaceGridRows
-    , int nTestSpaceGridCols
+    , float* model_vf_points_x
+    , float* model_vf_points_y
+    , int nModelSpaceGridRows
+    , int nModelSpaceGridCols
     , int nStimulusRows
     , int nStimulusCols)
 {
-    for (int row = 0; row < nTestSpaceGridRows; row++)
+    for (int row = 0; row < nModelSpaceGridRows; row++)
     {
-        for (int col = 0; col < nTestSpaceGridCols; col++)
+        for (int col = 0; col < nModelSpaceGridCols; col++)
         {
-            float mean_x = testspace_vf_points_x[col];
-            float mean_y = testspace_vf_points_y[row];
+            float mean_x = model_vf_points_x[col];
+            float mean_y = model_vf_points_y[row];
             std::string filename = dataFolder + "gc-(" + std::to_string(mean_x) + ", " + std::to_string(mean_y) + ").txt";
             std::ofstream outfile(filename);
-            for (int i = 0; i < nStimulusRows; i++) // Correct the loop index here
+
+            // indexing
+            int meanPairIdx = row * nModelSpaceGridCols + col;
+            int currentGaussianCurveStartIdx = meanPairIdx * (nStimulusCols * nStimulusRows); // (nStimulusCols * nStimulusRows) = single Gaussian curve size
+            int gaussIdx = currentGaussianCurveStartIdx;
+
+            for (int i = 0; i < nStimulusRows; i++)
             {
-                for (int j = 0; j < nStimulusCols; j++) // Correct the loop index here
+                for (int j = 0; j < nStimulusCols; j++)
                 {
-                    float value = result_gaussian_curves[(col * nStimulusCols + j) * nTestSpaceGridRows * nStimulusCols + row * nStimulusCols + i]; // Correct the indexing
+                    float value = result_gaussian_curves[gaussIdx];
                     outfile << value << "\n";
+                    gaussIdx++;
                 }
             }
             outfile.close();
@@ -81,10 +95,11 @@ void writeGaussianCurvesToFile(const std::string& dataFolder
 
 int main()
 {
-    const int nStimulusRows = 3;
-    const int nStimulusCols = 3;    
-    const int nQuadrilateralSpaceGridRows = 1; // could be test space or search space (or model signals space)
-    const int nQuadrilateralSpaceGridCols = 1;
+    const int nStimulusRows = 5;
+    const int nStimulusCols = 5;    
+    const int nStimulsFrames = 2;
+    const int nQuadrilateralSpaceGridRows = 3; // could be test space or search space (or model signals space)
+    const int nQuadrilateralSpaceGridCols = 3;
 
     // For GAUSSIAN
     Linspace stimulusVisualFieldPointsLinspace(-9.0, 9.0, nStimulusRows);
