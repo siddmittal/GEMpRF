@@ -93,7 +93,7 @@ void writeGaussianCurvesToFile(const std::string& dataFolder
 }
 
 
-int main()
+int main_working()
 {
     const int nStimulusRows = 5;
     const int nStimulusCols = 5;    

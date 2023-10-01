@@ -4,15 +4,15 @@ import numpy as np
 
 def generate_and_save_gaussian_curves():
     # Test space points
-    nTestspace_rows = 1
-    nTestspace_cols = 1
+    nTestspace_rows = 3
+    nTestspace_cols = 3
     xx = np.linspace(-9, +9, nTestspace_cols)
     yy = np.linspace(-9, +9, nTestspace_rows)
     X, Y = np.meshgrid(xx, yy)
 
     # Stimulus points
-    nStimulus_rows = 3
-    nStimulus_cols = 3
+    nStimulus_rows = 5
+    nStimulus_cols = 5
     stim_xx = np.linspace(-9, +9, nStimulus_cols)
     stim_yy = np.linspace(-9, +9, nStimulus_rows)
     stim_X, stim_Y = np.meshgrid(stim_xx, stim_yy)
@@ -21,7 +21,7 @@ def generate_and_save_gaussian_curves():
     sigma = 2
 
     # Create the directory to save the files
-    data_folder = r'D:\\code\\sid-git\\fmri\\local-extracted-datasets\\gpu-tests\\resulting-gaussian-curves\\1 x 1 gaussian curves-python'
+    data_folder = r'D:\\code\\sid-git\\fmri\\local-extracted-datasets\\gpu-tests\\resulting-gaussian-curves\\3 x 3 model - 5 x 5 Stimulus'
     os.makedirs(data_folder, exist_ok=True)
 
     for row in range(nTestspace_rows):
