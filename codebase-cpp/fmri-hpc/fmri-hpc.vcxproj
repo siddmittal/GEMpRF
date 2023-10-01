@@ -78,6 +78,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="generate_gaussian_curves_main.cu" />
+    <CudaCompile Include="generate_column_summations.cu" />
+    <CudaCompile Include="generate_intermediate_result_stimulus_multiplied_gaussian_curves.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Stimulus\Stimulus.h" />

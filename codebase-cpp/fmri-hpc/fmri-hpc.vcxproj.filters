@@ -2,6 +2,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CudaCompile Include="generate_gaussian_curves_main.cu" />
+    <CudaCompile Include="generate_intermediate_result_stimulus_multiplied_gaussian_curves.cu" />
+    <CudaCompile Include="generate_column_summations.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils\arrays\Linspace.h" />
