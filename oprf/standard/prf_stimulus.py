@@ -22,7 +22,7 @@ class Stimulus:
         resampling_factors = (
         resampled_stimulus_shape[0] / (original_stimulus_shape[0] -1),
         resampled_stimulus_shape[1] / (original_stimulus_shape[1] - 1),
-        1  # Keep the number of time points unchanged
+        resampled_stimulus_shape[2] / (original_stimulus_shape[2] - 1), # 1  # Keep the number of time points unchanged        
         )   
         self.resampled_data = zoom(self.org_data.squeeze(), resampling_factors, order=1)
     
