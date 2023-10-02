@@ -5,13 +5,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{f4061475-8fd4-4e1f-9a09-d09e671c8991}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>codebase\0011-gpu-simulation-grid-fitting\python-scripts\01.cpu-vs-gpu-test-using-cupy.py</StartupFile>
+    <StartupFile>codebase\0002-prf-cuda-simple\01.write-hrf-stimulus-to-file.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>CondaEnv|CondaEnv|fmri_python_env</InterpreterId>
+    <Name>fmri-python</Name>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -19,6 +20,8 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="codebase\0002-prf-cuda-simple\02.read-generated-gaussian-curves-for-verification.py" />
+    <Compile Include="codebase\0002-prf-cuda-simple\01.write-hrf-stimulus-to-file.py" />
     <Compile Include="codebase\probability-distribution\1_probability_distribution_histogram_generator.py" />
     <Compile Include="codebase\0011-gpu-simulation-grid-fitting\python-scripts\01.cpu-vs-gpu-test-using-cupy.py" />
     <Compile Include="oprf\analysis\prf_synthetic_data_generator.py" />
@@ -588,6 +591,7 @@
     <Folder Include="codebase\michi\optimized-regression\PRFclass\.lprof\" />
     <Folder Include="codebase\michi\optimized-regression\PRFclass\__pycache__\" />
     <Folder Include="codebase\0001-unit-tests\" />
+    <Folder Include="codebase\0002-prf-cuda-simple\" />
     <Folder Include="oprf\" />
     <Folder Include="oprf\analysis\" />
     <Folder Include="oprf\external\" />
