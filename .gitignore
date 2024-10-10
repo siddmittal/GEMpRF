@@ -1,0 +1,55 @@
+# Ignore locally extracted datasets
+local-extracted-datasets*
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.pdb
+*.exp
+*.cache
+*.deps
+
+# Debug folder
+*.tlog
+*.ilk
+*.recipe
+*.log
+*.ipch
+*.vsidx
+*.lock
+codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v17/.suo
+*.db
+*.user
+/.vs
+*.pyc
+*.pkl
+/codebase-cpp/fmri-hpc/x64/Debug

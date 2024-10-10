@@ -1,0 +1,1 @@
+variable = load("fffFit.mat")
