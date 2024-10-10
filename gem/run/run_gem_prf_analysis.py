@@ -8,6 +8,7 @@
 "@Desc    :   None",
         
 """
+import shutil
 import sys
 import os
 
@@ -605,6 +606,10 @@ class GEMpRFAnalysis:
         else:
             GEMpRFAnalysis.individual_run(cfg, prf_model, prf_space)        
 
+        # copy the config file to the results folder
+        config_filename = os.path.basename(config_filepath)
+        shutil.copy(config_filepath, os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids.get("results_anaylsis_id")}' , config_filename))
+
         return 0
 
 
@@ -622,7 +627,7 @@ if __name__ == "__main__":
     # profiler = cProfile.Profile()
     # profiler.enable()
 
-    config_filepath = os.path.join(os.path.dirname(__file__), '..', 'configs', 'multiproc_prfspace_config', 'dgx_analysis_config.xml')
+    config_filepath = os.path.join(os.path.dirname(__file__), '..', 'configs', 'analysis_configs', 'analysis_config.xml')
 
     # config_filepath = r'D:\code\sid-git\fmri\gem\configs\default_config\new_concatenationDummyTest_config.xml'
     # GEMpRFAnalysis.concatenated_run(config_filepath)
