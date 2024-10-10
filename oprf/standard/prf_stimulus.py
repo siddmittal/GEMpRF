@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as cp
 import matplotlib.pyplot as plt
 import nibabel as nib
 from scipy.ndimage import zoom
@@ -14,15 +15,16 @@ class Stimulus:
         self.org_data = (stimulus_img.get_fdata()).squeeze()
         self.resampled_data = None
         self.resampled_hrf_convolved_data = None
+        self.flattened_columnmajor_stimulus_data_gpu = None
 
     def compute_resample_stimulus_data(self
                                , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])
                                ):  
         original_stimulus_shape = self.org_data.shape # e.g. (1024, 1024, 1, 300)        
         resampling_factors = (
-        resampled_stimulus_shape[0] / (original_stimulus_shape[0] -1),
-        resampled_stimulus_shape[1] / (original_stimulus_shape[1] - 1),
-        resampled_stimulus_shape[2] / (original_stimulus_shape[2] - 1), # 1  # Keep the number of time points unchanged        
+        resampled_stimulus_shape[0] / (original_stimulus_shape[0]),  # TODO: MAybe "-1" needs to be removed !!!!
+        resampled_stimulus_shape[1] / (original_stimulus_shape[1]), # TODO: MAybe "-1" needs to be removed !!!!
+        resampled_stimulus_shape[2] / (original_stimulus_shape[2]), # 1  # Keep the number of time points unchanged        
         )   
         self.resampled_data = zoom(self.org_data.squeeze(), resampling_factors, order=1)
     
@@ -34,3 +36,11 @@ class Stimulus:
                 stimulus_location_convolved_timecourses[row, col, :] = np.convolve(location_tc, hrf_curve, mode='full')[:len(location_tc)]  
         
         self.resampled_hrf_convolved_data = stimulus_location_convolved_timecourses
+
+    def get_flattened_columnmajor_stimulus_data_gpu(self):  
+        if self.flattened_columnmajor_stimulus_data_gpu is None:
+            stimulus_flat_data_gpu = cp.asarray(self.resampled_hrf_convolved_data.flatten('F'))
+            stim_height, stim_width, stim_frames = self.resampled_data.shape
+            self.flattened_columnmajor_stimulus_data_gpu = cp.reshape(stimulus_flat_data_gpu, (stim_height * stim_width, stim_frames), order='F') # each column contains a flat stimulus frame
+        
+        return self.flattened_columnmajor_stimulus_data_gpu

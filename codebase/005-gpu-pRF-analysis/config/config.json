@@ -1,0 +1,27 @@
+{
+  "visual_field_size": "9",
+
+  "stimulus": {
+    "filePath": "D:\\code\\sid-git\\fmri\\local-extracted-datasets\\sid-prf-fmri-data\\task-bar_apertures.nii.gz",
+    "width": 101,
+    "height": 101,
+    "num_frames": 301
+  },
+
+  "search_space": {
+    "nRows": "9",
+    "nCols": "9"
+  },
+
+  "test_space": {
+    "nRows": "11",
+    "nCols": "11"
+  },
+
+  "noise": {
+    "level": "0.1",
+    "model": "gaussian",
+    "synthesis_ratio": "1"
+  }
+}
+

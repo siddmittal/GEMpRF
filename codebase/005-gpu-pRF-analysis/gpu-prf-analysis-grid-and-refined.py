@@ -1,0 +1,313 @@
+# Add my "oprf" package path
+import sys
+sys.path.append("D:/code/sid-git/fmri/")
+
+import numpy as np
+import cupy as cp
+import matplotlib.pyplot as plt
+import cProfile
+import os
+
+# Local Imports
+#from config.config import Configuration as config
+from oprf.standard.prf_stimulus import Stimulus
+from oprf.external.hrf_generator_script import spm_hrf_compat # HRF Generator
+from compute_inverse_matrix_M import Grids2MpInv, get_block_indices_new
+
+###########################################--------Variables------------###############################################################
+# Variables
+num_noisy_signals_per_signal = 1
+search_space_rows = 3
+search_space_cols = 5
+search_space_frames = 1 #<-----------when we have variable SIGMA
+stim_width = 101
+stim_height = 101
+sigma = np.double(2) ### 2
+total_gaussian_curves_per_stim_frame = search_space_rows * search_space_cols
+single_gaussian_curve_length = stim_width * stim_height
+# search_space_xx = np.linspace(-9, +9, search_space_cols)
+# search_space_yy = np.linspace(-9, +9, search_space_rows)
+search_space_xx = np.linspace(-15, +15, search_space_cols)
+search_space_yy = np.linspace(-15, +15, search_space_rows)
+mu_X_grid, mu_Y_grid = np.meshgrid(search_space_xx, search_space_yy) 
+arr_2d_location_inv_M_cpu = Grids2MpInv(mu_X_grid, mu_Y_grid) ##<<<<--------Compute pre-define matrix M
+
+###########################################--------Stimulus------------###############################################################
+# HRF Curve
+hrf_t = np.linspace(0, 30, 31)
+hrf_curve = spm_hrf_compat(hrf_t)
+stimulus = Stimulus("D:\\code\\sid-git\\fmri\\local-extracted-datasets\\sid-prf-fmri-data\\task-bar_apertures.nii.gz", size_in_degrees=9)
+stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2]))
+stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=hrf_curve)
+stim_frames = stimulus.resampled_hrf_convolved_data.shape[2] 
+
+###########################################--------FUNCTIONS------------###############################################################
+def create_cofficients_matrices_A_and_B(coefficients):
+    # coefficients = [a11, a22, a12, b1, b2 ] <----MIND that a22 is at second position
+    '''   
+        A =[[a11    a12]
+            [a12    a22]]      
+    ''' 
+    A = np.array([
+            [coefficients[0], coefficients[2]],
+            [coefficients[2], coefficients[1]]
+        ])
+    
+    B = np.array([coefficients[3], coefficients[4]])
+    return A, B
+
+def flatIdx2TwoDimIndices(flatIdx, nRows, nCols):
+    flatIdx = np.atleast_1d(flatIdx)  # Convert to NumPy array to handle multiple values or a single value
+    row = flatIdx // nCols
+    col = flatIdx % nCols
+    return row, col
+
+def twoDimIndices2FlatIdx(twoDimIdx, nRows, nCols):
+    twoDimIdx = np.atleast_2d(twoDimIdx)  # Convert to NumPy array to handle multiple values or a single value
+    row, col = twoDimIdx.T  # Transpose to unpack rows and columns
+    flatIdx = row * nCols + col
+    return flatIdx
+
+
+
+##--------Create Simulated Signals
+def generate_noisy_signals(org_signals_along_columns, synthesis_ratio):
+    noise_std=0.01
+    #noisy_signals = org_signals_along_columns + cp.random.normal(0, 0.01, size=org_signals_along_columns.shape)
+    #return noisy_signals
+    num_signals, signal_length = org_signals_along_columns.shape
+    noisy_signals = cp.tile(org_signals_along_columns, (1, synthesis_ratio))
+    noise = cp.random.normal(0, noise_std, size=(num_signals, synthesis_ratio * signal_length))
+    noisy_signals += noise
+    
+    return noisy_signals
+
+##--------CUDA Gaussian Kernel
+def get_gaussian_related_kernel(kernel_filename, kernel_name):
+    # Get the path of the current script
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    # Construct the path to the CUDA kernel file
+    kernel_file_path = os.path.join(script_dir, 'kernels/gaussian_kernel.cu')
+
+    # Load the CUDA kernel file
+    with open(kernel_file_path, 'r') as kernel_file:
+        kernel_code = kernel_file.read()
+
+    # Compile the kernel code using CuPy
+    kernel = cp.RawKernel(kernel_code, 'generateGaussianKernel')
+
+    return kernel
+
+###########################################------------------PROGRAM------------###############################################################
+def plot_element(e_gpu, Y_signals_gpu, y_idx, search_space_xx, search_space_yy, refined_X, actual_X):
+    # Calculate ee and ee_8_gpu (assuming other variables are defined elsewhere)
+    ee = (e_gpu)**2
+    ee_8_gpu = ee[y_idx, :]  # element row, all columns
+    ee_8_cpu = cp.asnumpy(ee_8_gpu)
+    
+    # Create a figure and plot the contour
+    plt.figure()
+    plt.contour(search_space_xx, search_space_yy, ee_8_cpu.reshape((len(search_space_yy), len(search_space_xx))))
+
+    # Plot refined_X
+    x1, y1 = refined_X
+    plt.scatter(x1, y1, color='red', marker='o', label=f'Computed ({x1:.2f}, {y1:.2f})')  # Rounded to 2 decimal places
+    
+    # Plot actual_X 
+    x2, y2 = actual_X
+    plt.scatter(x2, y2, color='blue', marker='s', label=f'Real ({x2}, {y2})')  # Rounded to 2 decimal places
+
+    # Include y_idx in the title
+    plt.title(f'Plot for y_idx: {y_idx:.2f}')
+
+    plt.legend()
+    
+    # Display the plot
+    plt.show(block=False)
+    
+    print('done')
+
+temp_X , temp_Y = np.meshgrid(search_space_xx, search_space_yy)
+def gpu_compute():
+    ###########################################--------Compute Gaussian Curves------------###############################################################
+    # Gaussian curves
+    stim_xx_gpu = cp.linspace(-9, +9, stim_width)
+    stim_yy_gpu = cp.linspace(-9, +9, stim_height)
+
+    #search_space_xx_gpu = cp.linspace(-9, +9, search_space_cols)
+    #search_space_yy_gpu = cp.linspace(-9, +9, search_space_rows)
+
+    ## gpu - Gaussian
+    #stim_xx_gpu = cp.asarray(stim_xx)
+    #stim_yy_gpu = cp.asarray(stim_yy)
+    search_space_xx_gpu = cp.asarray(search_space_xx)
+    search_space_yy_gpu = cp.asarray(search_space_yy)
+    result_flat_gaussian_curves_data_gpu = cp.zeros((search_space_rows * search_space_cols * stim_width * stim_height), dtype=cp.float64)
+    result_flat_Dmu_x_gaussian_curves_data_gpu = cp.zeros((search_space_rows * search_space_cols * stim_width * stim_height), dtype=cp.float64)
+    result_flat_Dmu_y_gaussian_curves_data_gpu = cp.zeros((search_space_rows * search_space_cols * stim_width * stim_height), dtype=cp.float64)
+    result_flat_Dsigma_gaussian_curves_data_gpu = cp.zeros((search_space_rows * search_space_cols * stim_width * stim_height), dtype=cp.float64)
+
+    # Define CUDA kernel
+    block_dim_1 = (32, 32)
+    bx1 = int((search_space_cols + block_dim_1[0] - 1) / block_dim_1[0])
+    by1 = int((search_space_rows + block_dim_1[1] - 1) / block_dim_1[1])
+    grid_dim_1 = (bx1, by1)
+
+    # Gaussian related kernels
+    gaussian_kernel = get_gaussian_related_kernel('gaussian_kernel.cu', 'generateGaussianKernel')
+
+    # Launch Gaussian related kernels
+    #---compute gaussian curves
+    gaussian_kernel(grid_dim_1, block_dim_1, (
+        result_flat_gaussian_curves_data_gpu,
+        result_flat_Dmu_x_gaussian_curves_data_gpu,
+        result_flat_Dmu_y_gaussian_curves_data_gpu,
+        result_flat_Dsigma_gaussian_curves_data_gpu,
+        search_space_xx_gpu, 
+        search_space_yy_gpu,
+        stim_xx_gpu,
+        stim_yy_gpu,
+        search_space_rows,
+        search_space_cols, 
+        stim_width,
+        stim_height,
+        sigma
+    ))
+
+    # # Verify results - plt.imshow(reshaped_result[:, :, 10])
+    # Get results - Gaussian Curves
+    # result_flat_gaussian_curves_data_cpu = cp.asnumpy(result_flat_gaussian_curves_data_gpu)
+    # reshaped_result = np.reshape(result_flat_gaussian_curves_data_cpu, (101, 101, total_gaussian_curves_per_stim_frame), order='F')
+    # Dx = cp.asnumpy(result_flat_Dmu_x_gaussian_curves_data_gpu)
+    # reshaped_result_Dx = np.reshape(Dx, (101, 101, total_gaussian_curves_per_stim_frame), order='F')
+    # plt.imshow(reshaped_result_Dx [:, :, 10])
+
+    ###########################################--------Gaussian Curves to Timeseries (Shortend)------------###############################################################
+    # reshape gpu gaussian curuves row-wise
+    nRows_gaussian_curves_matrix = search_space_rows * search_space_cols
+    nCols_gaussian_curves_matrix = stim_height * stim_width
+    gaussian_curves_rowmajor_gpu = cp.reshape(result_flat_gaussian_curves_data_gpu, (nRows_gaussian_curves_matrix, nCols_gaussian_curves_matrix)) # each row contains a flat GC
+    dx_gaussian_curves_rowmajor_gpu = cp.reshape(result_flat_Dmu_x_gaussian_curves_data_gpu, (nRows_gaussian_curves_matrix, nCols_gaussian_curves_matrix))
+    dy_gaussian_curves_rowmajor_gpu = cp.reshape(result_flat_Dmu_y_gaussian_curves_data_gpu, (nRows_gaussian_curves_matrix, nCols_gaussian_curves_matrix))
+    test_gc = (cp.asnumpy(gaussian_curves_rowmajor_gpu[0, :])).reshape((stim_height, stim_width))
+
+    stimulus_flat_data_gpu = cp.asarray(stimulus.resampled_hrf_convolved_data.flatten('F'))
+    stimulus_data_columnmajor_gpu = cp.reshape(stimulus_flat_data_gpu, (stim_height * stim_width, stim_frames), order='F') # each column contains a flat stimulus frame
+    # test_stim = (cp.asnumpy(stimulus_data_columnmajor_gpu[:, 10])).reshape((stim_height, stim_width))
+
+    # S_rowmajor_gpu = cp.zeros((search_space_rows * search_space_cols, stim_frames), dtype=cp.float64)
+    # cp.dot(gaussian_curves_rowmajor_gpu, stimulus_data_columnmajor_gpu, S_rowmajor_gpu)
+    S_rowmajor_gpu = cp.dot(gaussian_curves_rowmajor_gpu, stimulus_data_columnmajor_gpu)
+    dS_dx_rowmajor_gpu = cp.dot(dx_gaussian_curves_rowmajor_gpu, stimulus_data_columnmajor_gpu)
+    dS_dy_rowmajor_gpu = cp.dot(dy_gaussian_curves_rowmajor_gpu, stimulus_data_columnmajor_gpu)
+    # test_tc = (cp.asnumpy(timeseries_rowmajor_gpu[1, :]))
+
+    ###########################################--------Regressors------------###############################################################
+    nDCT = 3
+    ndct = 2 * nDCT + 1
+    trends = np.zeros((stim_frames, np.max([np.sum(ndct), 1])))        
+
+    tc = np.linspace(0, 2.*np.pi, stim_frames)[:, None]        
+    trends = np.cos(tc.dot(np.arange(0, nDCT + 0.5, 0.5)[None, :]))
+
+    q, r = np.linalg.qr(trends) # QR decomposition
+    q *= np.sign(q[0, 0]) # sign function returns -1 if x < 0, 0 if x==0, 1 if x > 0
+
+    R_gpu = cp.asarray(q)
+    O_gpu = (cp.eye(stim_frames)  - cp.dot(R_gpu, R_gpu.T))
+
+    # orthogonalization + nomalization of signals/timecourses (present along the columns)
+    S_star_columnmajor_gpu = cp.dot(O_gpu, S_rowmajor_gpu.T)
+    S_star_S_star_invroot_gpu = ((S_star_columnmajor_gpu ** 2).sum(axis=0)) ** (-1/2) # single row vector: basically this is (s*.T @ s*) part but for all the signals, which is actually the square of a matrix and then summing up all the rows of a column (because our signals are along columns) 
+    S_prime_columnmajor_gpu = S_star_columnmajor_gpu * S_star_S_star_invroot_gpu # normalized, orthogonalized Signals
+    dS_star_dx_columnmajor_gpu = cp.dot(O_gpu, dS_dx_rowmajor_gpu.T)
+    dS_star_dy_columnmajor_gpu = cp.dot(O_gpu, dS_dy_rowmajor_gpu.T)    
+    dS_prime_dx_columnmajor_gpu = dS_star_dx_columnmajor_gpu * S_star_S_star_invroot_gpu -  (S_star_columnmajor_gpu * (S_star_S_star_invroot_gpu ** 3)) * ((S_star_columnmajor_gpu.T @ dS_star_dx_columnmajor_gpu).diagonal())
+    dS_prime_dy_columnmajor_gpu = dS_star_dy_columnmajor_gpu * S_star_S_star_invroot_gpu -  (S_star_columnmajor_gpu * (S_star_S_star_invroot_gpu ** 3)) * ((S_star_columnmajor_gpu.T @ dS_star_dy_columnmajor_gpu).diagonal())
+
+    test_orthogonalized_tc = (cp.asnumpy(S_prime_columnmajor_gpu[:, 1]))
+
+    # # nomalization of signals
+    # #column_norms = cp.linalg.norm(signals_columnmajor_gpu, axis=0)
+    # S_prime_columnmajor_gpu = S_prime_columnmajor_gpu / (cp.linalg.norm(S_prime_columnmajor_gpu, axis=0)) # now we have orthonormal signals (along columns)
+    # dS_star_dx_columnmajor_gpu = dS_star_dx_columnmajor_gpu / (cp.linalg.norm(dS_star_dx_columnmajor_gpu, axis=0))
+    # dS_star_dy_columnmajor_gpu = dS_star_dy_columnmajor_gpu / (cp.linalg.norm(dS_star_dy_columnmajor_gpu, axis=0))
+    # # test_normalized_orthogonalized_tc = (cp.asnumpy(S_prime_columnmajor_gpu[:, 1]))
+
+
+    ###########################################--------Simulated Noisy Signals------------###############################################################
+    Y_signals_gpu = generate_noisy_signals(S_prime_columnmajor_gpu, synthesis_ratio=2)    
+    # noisy_tc = (cp.asnumpy(noisy_signals_gpu[:, 1]))
+
+    ###########################################--------Projection Squared------------###############################################################    
+    e_gpu = (Y_signals_gpu.T @ S_prime_columnmajor_gpu)
+    de_dx_full_gpu = 2 * e_gpu * (Y_signals_gpu.T @ dS_prime_dx_columnmajor_gpu)
+    de_dy_full_gpu = 2 * e_gpu * (Y_signals_gpu.T @ dS_prime_dy_columnmajor_gpu)
+    best_fit_proj_gpu = cp.argmax(e_gpu **2, axis=1)     #<<<<----find the max. element's index for the rows along their columns (that's why axis=1)
+    
+
+    ###########################################--------Refined Search------------###############################################################          
+    # Y_signals_cpu = cp.asnumpy(Y_signals_gpu)
+    # S_prime_columnmajor_cpu = cp.asnumpy(S_prime_columnmajor_gpu)
+    # dx_S_prime_columnmajor_cpu = cp.asnumpy(dx_S_prime_columnmajor_gpu)
+    # dy_S_prime_columnmajor_cpu = cp.asnumpy(dy_S_prime_columnmajor_gpu)
+    # e_cpu = cp.asnumpy(e_gpu)
+    best_fit_proj_cpu = cp.asnumpy(best_fit_proj_gpu)
+    de_dx_full_cpu = cp.asnumpy(de_dx_full_gpu)
+    de_dy_full_cpu = cp.asnumpy(de_dy_full_gpu)
+
+    # TEST: plot errors for the measured/simulated signal no. 8
+    if(False):        
+        ee = (e_gpu)**2
+        ee_8_gpu = ee[int(((Y_signals_gpu.T).shape[0]) // 4), :] # 8th row i.e. 8th signal, all columns
+        ee_8_cpu = cp.asnumpy(ee_8_gpu)
+        plt.figure()
+        plt.contour(search_space_xx, search_space_yy , ee_8_cpu.reshape((len(search_space_yy),len(search_space_xx))))
+        # plt.figure()
+        # ax = plt.axes(projection='3d')
+        # ax.plot_surface(search_space_xx, search_space_yy, ee_8_cpu.reshape((len(search_space_yy),len(search_space_xx))),cmap='viridis', edgecolor='none')
+        print('done')
+
+    for y_idx in range(Y_signals_gpu.shape[1]):
+        best_s_idx = best_fit_proj_cpu[y_idx]
+        best_s_2d_idx = flatIdx2TwoDimIndices(best_s_idx, search_space_rows, search_space_cols)
+
+        # get the current signal and its neighboring signals indices
+        block_2d_indices = get_block_indices_new(row=best_s_2d_idx[0], col=best_s_2d_idx[1], nRows=search_space_rows, nCols=search_space_cols)
+        block_flat_indices = (twoDimIndices2FlatIdx(twoDimIdx=block_2d_indices, nRows=search_space_rows, nCols=search_space_cols)).astype(int)
+
+        # compute the coffeficients
+        #...get the pre-computed Mp Inverse matrix (already containing information about the neighbors)
+        MpInv = arr_2d_location_inv_M_cpu[best_s_idx]        
+        
+        #...compute the de/dx, de/dy and de/dsigma vectors# 
+        de_dx_vec_cpu = de_dx_full_cpu[y_idx, block_flat_indices]
+        de_dy_vec_cpu = de_dy_full_cpu[y_idx, block_flat_indices]
+        de_dX_cpu = (np.vstack( (de_dx_vec_cpu, de_dy_vec_cpu) )).ravel(order = 'F') # <<<----MIND, it's capital X in de_dX. Capital X means the complete vector i.e. [ux1, uy1, ux2, uy2, ux3, uy3...]
+        coefficients = MpInv@de_dX_cpu
+        A, B = create_cofficients_matrices_A_and_B(coefficients)
+        refined_X = -0.5 * (np.linalg.inv(A) @ B)
+        actual_X = (mu_X_grid[best_s_2d_idx[0], best_s_2d_idx[1]], mu_Y_grid[best_s_2d_idx[0], best_s_2d_idx[1]])
+
+        plot_element(e_gpu, Y_signals_gpu, y_idx, search_space_xx, search_space_yy, refined_X, actual_X)
+        # plot_element(de_dx_full_cpu, Y_signals_gpu, y_idx, search_space_xx, search_space_yy, refined_X, actual_X)
+        # plot_element(de_dy_full_cpu, Y_signals_gpu, y_idx, search_space_xx, search_space_yy, refined_X, actual_X)
+        f = plt.figure()
+
+        quiver = plt.gca().quiver(temp_X , temp_Y, -de_dx_full_cpu[y_idx], -de_dy_full_cpu[y_idx], angles='xy', scale_units='xy', norm=plt.Normalize(-5, 5))
+
+        print('done')
+
+
+    # Synchronize and release memory
+    cp.cuda.Device().synchronize()
+
+
+###################################-----------Main()---------------------------------####################
+cProfile.run('gpu_compute()', sort='cumulative')
+print("done")
+
+
+
+

@@ -1,10 +1,10 @@
 #include "Meshgrid.h"
 
-Meshgrid::Meshgrid(const std::vector<float>& x, const std::vector<float>& y)
+Meshgrid::Meshgrid(const std::vector<double>& x, const std::vector<double>& y)
     : _x(x), _y(y), _numX(x.size()), _numY(y.size()) 
 {
-    _xMeshGridArr = new float[_numX * _numY];
-    _yMeshGridArr = new float[_numX * _numY];
+    _xMeshGridArr = new double[_numX * _numY];
+    _yMeshGridArr = new double[_numX * _numY];
 }
 
 Meshgrid::~Meshgrid()
@@ -13,9 +13,9 @@ Meshgrid::~Meshgrid()
     delete[] _yMeshGridArr;
 }
 
-std::vector<std::vector<float>> Meshgrid::X() 
+std::vector<std::vector<double>> Meshgrid::X() 
 {
-    std::vector<std::vector<float>> result(_numY, std::vector<float>(_numX, 0.0));
+    std::vector<std::vector<double>> result(_numY, std::vector<double>(_numX, 0.0));
 
     for (int i = 0; i < _numY; ++i) 
     {
@@ -28,9 +28,9 @@ std::vector<std::vector<float>> Meshgrid::X()
     return result;
 }
 
-std::vector<std::vector<float>> Meshgrid::Y() 
+std::vector<std::vector<double>> Meshgrid::Y() 
 {
-    std::vector<std::vector<float>> result(_numY, std::vector<float>(_numX, 0.0));
+    std::vector<std::vector<double>> result(_numY, std::vector<double>(_numX, 0.0));
 
     for (int i = 0; i < _numY; ++i) 
     {
@@ -44,7 +44,7 @@ std::vector<std::vector<float>> Meshgrid::Y()
 }
 
 
-float* Meshgrid::XMeshGridArr()
+double* Meshgrid::XMeshGridArr()
 {
     for (int i = 0; i < _numY; ++i)
     {
@@ -57,7 +57,7 @@ float* Meshgrid::XMeshGridArr()
     return _xMeshGridArr;
 }
 
-float* Meshgrid::YMeshGridArr()
+double* Meshgrid::YMeshGridArr()
 {
     for (int i = 0; i < _numY; ++i)
     {

@@ -1,0 +1,88 @@
+<root>
+  
+  <path_to_append>/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/fmri/</path_to_append>
+
+  
+  <input_datasrc>    
+      
+    <BIDS enable="False"> 
+      <basepath>...</basepath>
+      <append_to_basepath />           
+      
+
+      
+      <analysis /> 
+      <sub /> 
+      <ses />
+      <task />
+      <run />
+      <hemi />
+    </BIDS>
+
+    
+    <fixed_paths>
+      <measured_data_filepath> 
+        <filepath>d:\code\sid-git\fmri\gem\tests\data\sub-5000_ses-0n0_task-prf_acq-normal_run-01_bold.nii.gz</filepath>        
+      </measured_data_filepath>              
+      <results> 
+        <basepath>d:\code\sid-git\fmri\gem\tests\temp</basepath>     
+        <custom_filename_postfix />     
+        <prepend_date>False</prepend_date> 
+      </results>
+    </fixed_paths>
+  </input_datasrc>
+
+  
+  <pRF_model>    
+    <model>2d_gauss</model> 
+  </pRF_model>
+
+
+
+  
+  <stimulus>
+    
+    <filepath>will be added during runtime by the unittest</filepath>      
+    <visual_field>10</visual_field> 
+    <width>101</width>
+    <height>101</height>
+  </stimulus>
+
+  
+  <measured_data>
+    <width>101</width>
+    <height>101</height>
+    <batches>4</batches>    
+  </measured_data>
+
+  
+  <gpu>
+    
+    <default_gpu>0</default_gpu>
+    
+    <additional_available_gpus>
+      <gpu>0</gpu>
+      <gpu>1</gpu>
+      <gpu>3</gpu>
+    </additional_available_gpus>
+  </gpu>
+
+  
+  <search_space>    
+    <visual_field>13.5</visual_field> 
+    <nRows>151</nRows>
+    <nCols>151</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>5</max_sigma>
+    <nSigma>16</nSigma>
+  </search_space>
+
+  
+  <test_space>
+    <nRows>11</nRows>
+    <nCols>11</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>4</max_sigma>
+    <nSigma>1</nSigma>
+  </test_space>
+</root>

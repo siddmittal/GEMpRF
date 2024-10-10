@@ -1,0 +1,180 @@
+<!-- XML representation of JSON data -->
+<!-- 
+    "@Author  :   Siddharth Mittal",
+    "@Version :   1.0",
+    "@Contact :   siddharth.mittal@meduniwien.ac.at",
+    "@License :   (C)Copyright 2024, Medical University of Vienna"
+-->
+
+<!-- NOTE for Analysis: For DUMMY/Analsis, set correct Visual field at two positions, one for the <stimulus> and another for <search_space>-->
+
+
+<root>
+  <!-- Path information -->
+  <path_to_append>/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/fmri/</path_to_append>
+
+  <!-- Input Data -->
+  <input_datasrc>    
+    <!-- either spcify the BIDS info and set enable=True -->  
+    <BIDS enable="True"> <!-- Flag to indicate BIDS format -->
+      <basepath>Y:\data\stimsim23\BIDS\</basepath>
+      <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- path until you have the subjects (specify if the "analysis-xx")  -->          
+      <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
+      <results_anaylsis_id>03ConcatTestNewFunction</results_anaylsis_id> <!-- analysis id to save the results -->
+      
+      <!-- 
+        NOTE: Case sensitive, provide the exact values!!!
+        For the analysis, sub, ses, task, run, hemi,
+        either provide comma separated values or specify "all" (to go through every available analysis) 
+        Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
+      -->
+      <analysis>03</analysis> 
+      <sub>sidtestDummyConcatTest</sub>
+      <hemi>all</hemi>
+      <!--<ses>001</ses>
+      <task>bar</task>
+      <run>01</run>-->
+      
+      <!--INDIVIDUAL Analysis-->
+      <individual>
+        <ses>001</ses>
+        <task>bar</task>
+        <run>01</run>        
+      </individual>
+
+      <!--CONCATENATED Analysis-->
+      <concatenated>
+        <enable>False</enable>        
+        <!--<combination>ses-001_task-bar_run-01</combination>
+        <combination>ses-001_task-bar_run-02</combination>-->
+        <concatenate_item>
+          <ses>001</ses>
+          <task>bar</task>
+          <run>01</run>
+        </concatenate_item>
+        <concatenate_item>
+          <ses>001</ses>
+          <task>bar</task>
+          <run>01Concat</run>
+        </concatenate_item>
+
+      </concatenated>
+      
+      
+      
+    </BIDS>
+
+    <!--OR, make Bids False and specify directly single/multiple filepaths -->
+    <fixed_paths>
+      <measured_data_filepath> <!-- Measured input data filepaths -->
+        <filepath>Y:\data\tests\gem-paper-simulated-data\analysis\04\BIDS\derivatives\prfsynth\analysis-04\sub-001\ses-3n2\func\sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+        <filepath>...dummy_filepath.....</filepath>
+      </measured_data_filepath>              
+      <results> <!-- Results filepaths realted  -->
+        <basepath>D:\results\fmri/generic/</basepath> <!-- Base path for results -->
+        <custom_filename_postfix>_[gem-benchmark_51x51x8]</custom_filename_postfix> <!-- Custom filename postfix -->    
+        <prepend_date>True</prepend_date> <!-- Flag to prepend date -->
+      </results>
+    </fixed_paths>
+  </input_datasrc>
+
+  <!-- Analysis Model -->
+  <pRF_model_details>    
+    <model>2d_gaussian</model> <!-- 2d_gauss, DoG, CSS -->
+  </pRF_model_details>
+
+
+
+  <!-- Stimulus data -->
+  <stimulus>
+    <!-- File path for stimulus -->
+    <filepath>Y:/data/stimsim23/BIDS/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
+    <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
+    <width>101</width>
+    <height>101</height>
+  </stimulus>
+
+  <!-- Measured data section -->
+  <measured_data>
+    <width>101</width>
+    <height>101</height>
+    <batches>16</batches>    
+  </measured_data>
+
+  <!-- GPU configuration -->
+  <gpu>
+    <!-- Default GPU -->
+    <default_gpu>0</default_gpu>
+    <!-- Additional available GPUs -->
+    <additional_available_gpus>
+      <gpu>0</gpu>
+      <gpu>1</gpu>
+      <gpu>3</gpu>
+    </additional_available_gpus>
+  </gpu>
+
+  <!-- Search space information -->
+  <search_space>    
+    <visual_field>13.5</visual_field> <!-- NOTE: use "9" for analysis with DUMMY signal because the signal is generated using maxEcc=9 ....and the visual field is 13.5 degrees for NORMAL analysis.-->
+    <nRows>51</nRows>
+    <nCols>51</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>5</max_sigma>
+    <nSigma>8</nSigma>
+  </search_space>
+
+  <!-- Test space information -->
+  <test_space>
+    <nRows>11</nRows>
+    <nCols>11</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>4</max_sigma>
+    <nSigma>1</nSigma>
+  </test_space>
+  
+  <!--Concatenation-->
+  <concatenation>
+    <enable>True</enable>        
+    <subjects>001</subjects> <!--comma seperated list OR "all"-->
+    
+    <sessions>001</sessions>
+    <runs>01, 02</runs>
+    <!--comma seperated list-->
+  </concatenation>
+  
+
+  <!-- OBSOLETE: Concatenated runs information -->
+  <concatenated_runs>
+    <enable>True</enable>
+    <num_runs>2</num_runs>
+    <height>101</height>
+    <batches>4</batches>
+    
+    <!-- BIDS run information -->
+    <bids_runs>
+      <run>01</run>
+      <run>02</run>
+    </bids_runs>
+    <!-- BIDS task information -->
+    <bids_tasks>
+      <task>bar</task>
+      <task>ring</task>
+    </bids_tasks>
+    <!-- Stimulus file paths -->
+    <stimulus>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
+    </stimulus>
+    <!-- Measured data file paths -->
+    <measured_data>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/ses-001/func/sub-sidtest_ses-001_task-bar_run-01_hemi-L_bold.nii.gz</filepath>
+    </measured_data>
+  </concatenated_runs>
+
+  <!-- Noise information -->
+  <noise>    
+    <level>0.1</level>    
+    <model>gaussian</model>    
+    <synthesis_ratio>1</synthesis_ratio> <!-- number of noisy signals per pRF location -->
+  </noise>
+</root>

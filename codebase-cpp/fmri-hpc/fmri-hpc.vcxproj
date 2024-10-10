@@ -82,13 +82,24 @@
     <CudaCompile Include="generate_gaussian_curves_main.cu" />
     <CudaCompile Include="generate_column_summations.cu" />
     <CudaCompile Include="generate_intermediate_result_stimulus_multiplied_gaussian_curves.cu" />
+    <CudaCompile Include="ModelSignals\cuda\ComputeTimeseriesKernel.cu" />
+    <CudaCompile Include="ModelSignals\cuda\FreeDeviceMemoryWrapper.cu" />
+    <CudaCompile Include="ModelSignals\cuda\ApplyStimulusMaskKernel.cu" />
+    <CudaCompile Include="ModelSignals\cuda\GaussianCurvesGeneratorKernel.cu" />
+    <CudaCompile Include="ModelSignals\cuda\SignalsOrthonomaliazationKernel.cu" />
+    <CudaCompile Include="orthonormalize_signal.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="utils\matrix\Matrix.h" />
+    <ClInclude Include="ModelSignals\header\ModelSignals.h" />
     <ClInclude Include="Stimulus\Stimulus.h" />
     <ClInclude Include="utils\arrays\Linspace.h" />
     <ClInclude Include="utils\arrays\Meshgrid.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="class_based_main_1.cpp" />
+    <ClCompile Include="utils\matrix\Matrix.cpp" />
+    <ClCompile Include="ModelSignals\source\ModelSignals.cpp" />
     <ClCompile Include="Stimulus\Stimulus.cpp" />
     <ClCompile Include="utils\arrays\Linspace.cpp" />
     <ClCompile Include="utils\arrays\Meshgrid.cpp" />

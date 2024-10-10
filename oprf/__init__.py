@@ -6,3 +6,9 @@ from .external import *
 
 from . import analysis
 from .analysis import *
+
+from . import hpc
+from .hpc import *
+
+from . import tools
+from .tools import *

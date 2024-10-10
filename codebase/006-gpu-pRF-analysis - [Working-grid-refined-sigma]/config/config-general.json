@@ -1,0 +1,62 @@
+{
+  "path_to_append": "/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/fmri/",
+
+  "results": {
+    "basepath": "...",
+    "custom_filename_postfix": "",
+    "prepend_date": "False",
+    "analysis": "",
+    "sub": "",
+    "ses": ""
+  },
+
+
+  "stimulus": {
+    "task": "task-prf",
+    "filepath": "/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-01/sub-sidtest/stimuli/task-bar_apertures.nii.gz",
+    "visual_field": "10",
+    "width": 101,
+    "height": 101
+  },
+
+  "measured_data": {
+    "width": 101,
+    "height": 101,
+    "batches": 4,
+
+    "filepaths": [
+      "/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-01/sub-sidtest/ses-002/func/sub-sidtest_ses-002_task-bar_run-02_hemi-R_bold.nii.gz"
+    ]
+  },
+
+  "gpu": {
+    "default_gpu": "0",
+    "additional_available_gpus": [
+      0, 1, 3
+    ]
+  },
+
+  "search_space": {
+    "visual_field": "12",
+    "nRows": "101",
+    "nCols": "101",
+    "min_sigma": "0.5",
+    "max_sigma": "6",
+    "nSigma": "8"
+  },
+
+  "test_space": {
+    "nRows": "11",
+    "nCols": "11",
+    "min_sigma": "0.5",
+    "max_sigma": "4",
+    "nSigma": "1"
+  },
+
+  "noise": {
+    "level": "0.1",
+    "model": "gaussian",
+    "synthesis_ratio": "1"
+  }
+}
+

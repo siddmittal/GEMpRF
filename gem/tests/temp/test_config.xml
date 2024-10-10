@@ -1,0 +1,151 @@
+<root>
+  
+  <path_to_append>/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/fmri/</path_to_append>
+
+  
+  <input_datasrc>    
+      
+    <BIDS enable="False"> 
+      <basepath>this_is_FIXED_FILEPATH_test_so_FIXED_filepats_specified_below</basepath>
+      <append_to_basepath>derivatives, prfsynth</append_to_basepath>           
+      
+      <results_anaylsis_id>01</results_anaylsis_id>
+      
+
+      
+      <analysis>01ForGemStructure</analysis>
+      <sub>all</sub>
+      <hemi>all</hemi>
+      
+
+      
+      <individual>
+        <ses>all</ses>
+        <task>prf</task>
+        <run>all</run>
+      </individual>
+
+      
+      <concatenated>
+        <enable>False</enable>
+        
+        <concatenate_item>
+          <ses>001</ses>
+          <task>bar</task>
+          <run>01</run>
+        </concatenate_item>
+        <concatenate_item>
+          <ses>001</ses>
+          <task>bar</task>
+          <run>02</run>
+        </concatenate_item>
+
+      </concatenated>
+      
+      
+      
+    </BIDS>
+
+    
+    <fixed_paths>
+      <measured_data_filepath> 
+        <filepath>d:\code\sid-git\fmri\gem\tests\testdata/simulated/3n2\sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+        <filepath>...dummy_filepath.....</filepath>
+      </measured_data_filepath>              
+      <results> 
+        <basepath>d:\code\sid-git\fmri\gem\tests\temp</basepath> 
+        <custom_filename_postfix />     
+        <prepend_date>False</prepend_date> 
+      </results>
+    </fixed_paths>
+  </input_datasrc>
+
+  
+  <pRF_model_details>    
+    <model>2d_gaussian</model> 
+  </pRF_model_details>
+
+
+
+  
+  <stimulus>
+    
+    <filepath>d:\code\sid-git\fmri\gem\tests\testdata/simulated/3n2\sub-001_ses-3n2_task-prf_apertures.nii.gz</filepath>
+    <visual_field>10</visual_field> 
+    <width>101</width>
+    <height>101</height>
+  </stimulus>
+
+  
+  <measured_data>
+    <width>101</width>
+    <height>101</height>
+    <batches>16</batches>    
+  </measured_data>
+
+  
+  <gpu>
+    
+    <default_gpu>0</default_gpu>
+    
+    <additional_available_gpus>
+      <gpu>0</gpu>
+      <gpu>1</gpu>
+      <gpu>3</gpu>
+    </additional_available_gpus>
+  </gpu>
+
+  
+  <search_space>    
+    <visual_field>13.5</visual_field> 
+    <nRows>51</nRows>
+    <nCols>51</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>5</max_sigma>
+    <nSigma>8</nSigma>
+  </search_space>
+
+  
+  <test_space>
+    <nRows>11</nRows>
+    <nCols>11</nCols>
+    <min_sigma>0.5</min_sigma>
+    <max_sigma>4</max_sigma>
+    <nSigma>1</nSigma>
+  </test_space>
+
+  
+  <concatenated_runs>
+    <enable>False</enable>
+    <num_runs>2</num_runs>
+    <height>101</height>
+    <batches>4</batches>
+    
+    
+    <bids_runs>
+      <run>01</run>
+      <run>02</run>
+    </bids_runs>
+    
+    <bids_tasks>
+      <task>bar</task>
+      <task>ring</task>
+    </bids_tasks>
+    
+    <stimulus>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
+    </stimulus>
+    
+    <measured_data>
+      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/ses-001/func/sub-sidtest_ses-001_task-bar_run-01_hemi-L_bold.nii.gz</filepath>
+    </measured_data>
+  </concatenated_runs>
+
+  
+  <noise>    
+    <level>0.1</level>    
+    <model>gaussian</model>    
+    <synthesis_ratio>1</synthesis_ratio> 
+  </noise>
+</root>

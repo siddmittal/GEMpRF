@@ -1,0 +1,51 @@
+{
+  "path_to_append": "D:\\code\\sid-git\\fmri\\",
+  
+  "results": {
+    "basepath": "D:\\results\\fmri\\",
+    "custom_filename_postfix": "_[test-2]",
+    "prepend_date": "True",
+    "analysis": "",
+    "sub": "",
+    "ses": ""
+  },
+
+  "stimulus": {
+    "filepath": "Y:/data/stimsim23/derivatives/prfprepare/analysis-01/sub-sidtest/stimuli/task-bar_apertures.nii.gz",
+    "visual_field": "9",
+    "width": 101,
+    "height": 101
+  },
+
+
+  "measured_data": {
+    "filepath": "Y:/data/stimsim23/derivatives/prfprepare/analysis-01/sub-sidtest/ses-002/func/sub-sidtest_ses-002_task-bar_run-02_hemi-R_bold.nii.gz",
+    "width": 101,
+    "height": 101,
+    "batches": 16
+  },
+
+  "search_space": {
+    "visual_field": "13.5",
+    "nRows": "151",
+    "nCols": "151",
+    "min_sigma": "0.5",
+    "max_sigma": "5",
+    "nSigma": "16"
+  },
+
+  "test_space": {
+    "nRows": "11",
+    "nCols": "11",
+    "min_sigma": "0.5",
+    "max_sigma": "4",
+    "nSigma": "1"
+  },
+
+  "noise": {
+    "level": "0.1",
+    "model": "gaussian",
+    "synthesis_ratio": "1"
+  }
+}
+
