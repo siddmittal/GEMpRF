@@ -1,2 +1,0 @@
-Downloaded by Sid from the GitHub repository:
-https://github.com/akcarsten/fMRI_data_analysis/tree/master
