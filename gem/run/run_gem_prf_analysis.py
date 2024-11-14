@@ -189,8 +189,8 @@ class GEMpRFAnalysis:
         return required_concatenations_info
 
     @classmethod
-    def get_refined_signals_cpu(cls, refined_prf_params_YX : np.ndarray, prf_model : PRFModel, stimulus : Stimulus):
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_params_YX, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
+    def get_refined_signals_cpu(cls, refined_prf_params_XY : np.ndarray, prf_model : PRFModel, stimulus : Stimulus):
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_params_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
         
         refined_S_cpu = []
         # refined signal batches could be present on different GPUs
@@ -207,11 +207,8 @@ class GEMpRFAnalysis:
 
     @classmethod
     def get_valid_refined_data(cls, refined_matching_results_XY, Y_signals_gpu, O_gpu, prf_model, stimulus, coarse_e_cpu,  best_fit_proj_cpu , coarse_pRF_estimations):
-        refined_prf_points_YX = refined_matching_results_XY
-        refined_prf_points_YX[:, [0, 1]] = refined_prf_points_YX[:, [1, 0]] # the CUDA code expected the (row, col) i.e. (y, x) convention
-
         # refined S batches
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_points_YX, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_matching_results_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
 
         # refined S' batches
         orthonormalized_S_cm_gpu_batches, _ = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu,
@@ -229,11 +226,7 @@ class GEMpRFAnalysis:
         worsened_error_y_signal_indices = np.argwhere((~np.isnan(refined_error_vector - coarse_error_vector)) & (refined_error_vector - coarse_error_vector < 0))
 
         # keep the coarse pRF parameters where the refined esitmations got worse
-        refined_prf_points_YX[worsened_error_y_signal_indices, :] = coarse_pRF_estimations[worsened_error_y_signal_indices, :]
-
-        # swap back to (X, Y) convention
-        refined_matching_results_XY = refined_prf_points_YX
-        refined_matching_results_XY[:, [0, 1]] = refined_matching_results_XY[:, [1, 0]] 
+        refined_matching_results_XY[worsened_error_y_signal_indices, :] = coarse_pRF_estimations[worsened_error_y_signal_indices, :]
 
         return refined_matching_results_XY
 
@@ -276,14 +269,12 @@ class GEMpRFAnalysis:
                 de_dtheta_list_cpu) 
         
             # validate if the refined pRF estimations are really improving the error value, and for the pRF points where error is getting worse, keep the coarse pRF estimations
-            coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu]
+            coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu] # NOTE: The coarse_estimation values are in YX format
             valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, Y_signals_gpu=Y_signals_batch_gpu,
                                                                  O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations)
 
             # compute timecourses for refined pRF estimated params
-            valid_refined_prf_points_YX_batch = valid_refined_prf_points_XY_batch
-            valid_refined_prf_points_YX_batch[:, [0, 1]] = valid_refined_prf_points_YX_batch[:, [1, 0]] # the CUDA code expected the (row, col) i.e. (y, x) convention
-            valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_YX_batch, prf_model, stimulus)
+            valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus)
 
             # compute Variance Explained
             r2_results_batch = R2.get_r2_num_den_method_with_epsilon_as_yTs(Y_signals_batch_gpu, O_gpu, valid_refined_prf_points_XY_batch, valid_refined_S_cpu_batch).reshape(-1, 1)
@@ -583,11 +574,11 @@ class GEMpRFAnalysis:
         
         # ...prf spatial points
         if spatial_points_xy is None:
-            spatial_points_xy = GEMpRFAnalysis.get_prf_spatial_points(cfg)
+            spatial_points_yx = GEMpRFAnalysis.get_prf_spatial_points(cfg) # this will return the spatial points in (row/y, col/x) format
         
-        # convert spatial points from (col, row) to (row, col) convention for CUDA code
-        spatial_points_yx = spatial_points_xy
-        spatial_points_yx = spatial_points_yx[:, [1, 0]]
+        # convert spatial points from (row, col) to (col, row)
+        spatial_points_xy = spatial_points_yx
+        spatial_points_xy = spatial_points_yx[:, [1, 0]]
 
         # selected pRF model
         selected_prf_model = GEMpRFAnalysis.get_selected_prf_model(cfg)                
@@ -596,7 +587,7 @@ class GEMpRFAnalysis:
 
         # additional dimensions
         additional_dimensions = GEMpRFAnalysis.get_additional_dimensions(cfg, selected_prf_model)
-        prf_space = PRFSpace(spatial_points_yx, additional_dimensions=additional_dimensions)
+        prf_space = PRFSpace(spatial_points_xy, additional_dimensions=additional_dimensions)
         prf_space.convert_spatial_to_multidim()
         prf_space.keep_validated_sampling_points(prf_model.get_validated_sampling_points_indices) # update the computed multi-dimensional points array
 

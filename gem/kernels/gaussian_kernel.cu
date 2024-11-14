@@ -30,8 +30,8 @@ extern "C"
 			// double x_mean = prfPointsArgsFlatArr[argsIdx + 1];
 			// double sigma = prfPointsArgsFlatArr[argsIdx + 2];
 
-			double y_mean = prfPointsArgsFlatArr[prfPointIdx*num_dimensions];
-			double x_mean = prfPointsArgsFlatArr[prfPointIdx*num_dimensions + 1];
+			double x_mean = prfPointsArgsFlatArr[prfPointIdx*num_dimensions];
+			double y_mean = prfPointsArgsFlatArr[prfPointIdx*num_dimensions + 1];
 			double sigma = prfPointsArgsFlatArr[prfPointIdx*num_dimensions + 2];
 
 			// // printf("prfPointsArgsFlatArr[%d]: %f, %f, %f\n", prfPointIdx, prfPointsArgsFlatArr[prfPointIdx*num_dimensions], prfPointsArgsFlatArr[prfPointIdx*num_dimensions+1], prfPointsArgsFlatArr[prfPointIdx*num_dimensions+2]);
@@ -46,9 +46,9 @@ extern "C"
 
 			int gaussIdx = currentGaussianCurveStartIdx;
 			//printf("Thread: (%d, %d), meanPairIdx: %d,  currentGaussianCurveStartIdx: %d\n", row, col, meanPairIdx, currentGaussianCurveStartIdx);
-			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
-			{
-				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			{				
+				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -84,17 +84,18 @@ extern "C"
 		if (prfPointIdx < numTotalGaussianCurves)
 		{			
 			int argsIdx = prfPointIdx * num_dimensions;
-			double y_mean = prfPointsArgsFlatArr[argsIdx];
-			double x_mean = prfPointsArgsFlatArr[argsIdx + 1];
+			double x_mean = prfPointsArgsFlatArr[argsIdx];
+			double y_mean = prfPointsArgsFlatArr[argsIdx + 1];
 			double sigma = prfPointsArgsFlatArr[argsIdx + 2];
 
 			int meanPairIdx = argsIdx; 			
 			int currentGaussianCurveStartIdx = prfPointIdx * (nStimulusCols * nStimulusRows); // (nStimulusCols * nStimulusRows) = single Gaussian curve size
 
 			int gaussIdx = currentGaussianCurveStartIdx;
-			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
+			
+			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 			{
-				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)	
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -128,8 +129,8 @@ extern "C"
 		if (prfPointIdx < numTotalGaussianCurves)
 		{
 			int argsIdx = prfPointIdx * num_dimensions;
-			double y_mean = prfPointsArgsFlatArr[argsIdx];
-			double x_mean = prfPointsArgsFlatArr[argsIdx + 1];
+			double x_mean = prfPointsArgsFlatArr[argsIdx];
+			double y_mean = prfPointsArgsFlatArr[argsIdx + 1];
 			double sigma = prfPointsArgsFlatArr[argsIdx + 2];
 
 			int meanPairIdx = argsIdx; 
@@ -137,9 +138,10 @@ extern "C"
 			int currentGaussianCurveStartIdx = prfPointIdx * (nStimulusCols * nStimulusRows); // (nStimulusCols * nStimulusRows) = single Gaussian curve size
 
 			int gaussIdx = currentGaussianCurveStartIdx;
-			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
+			
+			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 			{
-				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -173,8 +175,8 @@ extern "C"
 		if (prfPointIdx < numTotalGaussianCurves)
 		{
 			int argsIdx = prfPointIdx * num_dimensions;
-			double y_mean = prfPointsArgsFlatArr[argsIdx];
-			double x_mean = prfPointsArgsFlatArr[argsIdx + 1];
+			double x_mean = prfPointsArgsFlatArr[argsIdx];
+			double y_mean = prfPointsArgsFlatArr[argsIdx + 1];
 			double sigma = prfPointsArgsFlatArr[argsIdx + 2];
 
 			int meanPairIdx = argsIdx; 
@@ -182,9 +184,10 @@ extern "C"
 			int currentGaussianCurveStartIdx = prfPointIdx * (nStimulusCols * nStimulusRows); // (nStimulusCols * nStimulusRows) = single Gaussian curve size
 
 			int gaussIdx = currentGaussianCurveStartIdx;
-			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
+			
+			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 			{
-				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)	
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];

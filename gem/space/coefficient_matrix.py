@@ -17,17 +17,12 @@ def GEM_Grids2MpInv_numba(multi_dim_points, multi_dim_points_neighbours):
         M = np.zeros((num_neighbours * num_linear_equations, num_unknown_coefficients), dtype=float)
         for i in  range(len(gaussian_args)):
             vecX = gaussian_args[i]
-            
-            # vecX[[0, 1]] = vecX[[1, 0]] # swap x and y
-            temp = vecX[0] # NOTE: Numba compatible
-            vecX[0] = vecX[1]
-            vecX[1] = temp
 
             x = np.array(
-                [[vecX[0] ** 2  ,   vecX[1] ** 2    , vecX[2] ** 2  ,   2. * vecX[0] * vecX[1]      ,   2. * vecX[0] * vecX[2]      ,    2. * vecX[1] * vecX[2]     ,   vecX[0]     ,   vecX[1]     ,   vecX[2] ,   1],
-                    [2. * vecX[0]  ,   0               , 0             ,   2. * vecX[1]                ,   2. * vecX[2]                ,    0                          ,   1           ,   0           ,   0       ,   0],
-                    [0             ,   2. * vecX[1]    , 0             ,   2. * vecX[0]                ,   0                           ,    2. * vecX[2]               ,   0           ,   1           ,   0       ,   0],
-                    [0             ,   0               , 2. * vecX[2]  ,   0                           ,   2. * vecX[0]                ,    2. * vecX[1]               ,   0           ,   0           ,   1       ,   0]]
+                [[vecX[0] ** 2  ,   vecX[1] ** 2    , vecX[2] ** 2  ,   2. * vecX[0] * vecX[1]      ,   2. * vecX[0] * vecX[2]      ,    2. * vecX[1] * vecX[2]     ,   vecX[0]     ,   vecX[1]     ,   vecX[2] ,   1],    # e       
+                    [2. * vecX[0]  ,   0               , 0             ,   2. * vecX[1]                ,   2. * vecX[2]                ,    0                          ,   1           ,   0           ,   0       ,   0], # de_dx   
+                    [0             ,   2. * vecX[1]    , 0             ,   2. * vecX[0]                ,   0                           ,    2. * vecX[2]               ,   0           ,   1           ,   0       ,   0], # de_dy   
+                    [0             ,   0               , 2. * vecX[2]  ,   0                           ,   2. * vecX[0]                ,    2. * vecX[1]               ,   0           ,   0           ,   1       ,   0]] # de_dsigma
                     )
             M[i * num_linear_equations : (i * num_linear_equations) + num_linear_equations, :] = x
 
