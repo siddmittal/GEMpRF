@@ -41,8 +41,11 @@ class RefineFit:
             MpInv = arr_2d_location_inv_M_cpu[best_s_idx] # NOTE: This is the correct way for the program, but for debugging, I am not using it and computing it again       
         
             #...compute the de/dx, de/dy and de/dsigma vectors# 
-            e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2                    
-            vec = np.vstack((e_vec.squeeze())).squeeze()
+            e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2      
+            if len(e_vec) == 1: # i.e. no other neighbours
+                vec = e_vec.squeeze()
+            else:              
+                vec = np.vstack((e_vec.squeeze())).squeeze()            
             for theta in range(num_params):
                 if(ONLY_SIGNLE_SIGNAL):                
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, block_flat_indices].T)[0]))
