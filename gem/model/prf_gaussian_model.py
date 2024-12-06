@@ -66,9 +66,23 @@ class PRFGaussianModel(PRFModel):
             The indices of validated pRF sampling points.
         """
 
+        # NOTE NOTE: Initial validation
         print("Extracting validated pRF sampling points...")        
         valid_indices = np.where((multidim_points[:, 0]**2 + multidim_points[:, 1]**2) < (self.__visual_field_radius**2)) # Calculate the condition (x^2 + y^2) < (radius^2)        
         return valid_indices[0] # "valid_indices" is a tuple so, extracting the array   
+        
+        # # # NOTE: New validation which includes the check for pRF size within the lower and upper bounds
+        # # eccentricity = np.sqrt(multidim_points[:, 0]**2 + multidim_points[:, 1]**2)
+
+        # # # pRF size bounds
+        # # lower_boundary = 0.3333 * eccentricity + 0.5
+        # # upper_boundary = 0.1667 * eccentricity + 2.75
+
+        # # within_radius_indices = np.where((eccentricity) < self.__visual_field_radius)
+        # # valid_pRF_indices = np.where((multidim_points[:, 2] >= lower_boundary) & (multidim_points[:, 2] <= upper_boundary))
+        # # valid_indices = np.intersect1d(within_radius_indices[0], valid_pRF_indices[0]) # combined
+
+        # # return valid_indices
         
 
     ####################------------Properties------------####################
