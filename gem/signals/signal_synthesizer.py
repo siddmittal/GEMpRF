@@ -224,7 +224,16 @@ class SignalSynthesizer:
                     S_star_S_star_invroot_gpu = ((S_star_columnmajor_gpu ** 2).sum()) ** (-1/2)
                 
                 S_prime_columnmajor_gpu = S_star_columnmajor_gpu * S_star_S_star_invroot_gpu # normalized, orthogonalized Signals        
+
+                # NOTE: due to numerical instability, some signals do not normalize to 1, and have values much greater than 1. We need to set all values of these signals to infinity
+                # ...find columns in S_prime_columnmajor_gpu, whose Norm is not close to 1
+                norm = ((S_prime_columnmajor_gpu ** 2).sum(axis=0)) ** (-1/2)
+                max_values_idx = cp.where(~cp.isclose(norm, 1.0))[0] # max_values_idx = cp.where(max_values > 1.001)[0]                                  
+                S_prime_columnmajor_gpu[:, max_values_idx] = cp.full((S_prime_columnmajor_gpu.shape[0], len(max_values_idx)), cp.inf) # ...set these columns to infinity
+
+                # append results     
                 S_prime_batches.append(S_prime_columnmajor_gpu)
+
 
                 # orthogonalize: derivative signals                
                 for theta in range(num_theta_params):

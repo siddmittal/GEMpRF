@@ -45,13 +45,17 @@ class RefineFit:
             if len(e_vec) == 1: # i.e. no other neighbours
                 vec = e_vec.squeeze()
             else:              
-                vec = np.vstack((e_vec.squeeze())).squeeze()            
+                vec = np.vstack((e_vec.squeeze())).squeeze()   
+                non_NaN_e_row_indices = cls.get_non_nan_row_indices(vec)         
             for theta in range(num_params):
-                if(ONLY_SIGNLE_SIGNAL):                
+                if(ONLY_SIGNLE_SIGNAL):     
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, block_flat_indices].T)[0]))
                 else:
+                    de_dtheta_vec = de_dtheta_list_cpu[theta, y_idx, block_flat_indices]
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, y_idx, block_flat_indices].T)[0]))
+                    vec
 
+            vec = vec[:, non_NaN_e_row_indices]
             vec = vec.T.reshape(-1)
 
             # in case of concatenation runs, we have `vec` as cupy array
@@ -73,7 +77,21 @@ class RefineFit:
             Fex_results.append(fex)
 
         return results, Fex_results             
-    
+
+    @classmethod
+    def get_non_nan_row_indices(cls, input_array):
+        package = None
+        if type(input_array) is cp.ndarray:
+            package = cp
+        elif type(input_array) is np.ndarray:
+            package = np
+        
+        if input_array.ndim == 1:
+            return package.where(~package.isnan(input_array))[0]
+        else:
+            return package.where(~package.isnan(input_array).any(axis=1))[0]
+
+
     @classmethod
     def compute_fx(cls, refined_X, A, B, C):
         # e = X.T @ (A @ X) + B@X + C
