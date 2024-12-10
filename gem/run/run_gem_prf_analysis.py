@@ -444,14 +444,14 @@ class GEMpRFAnalysis:
                 # #                                                                           coarse_pRF_estimations=coarse_pRF_estimations)
 
                 valid_refined_prf_points_XY_batch = refined_matching_results_XY
-                valid_refined_prf_points_YX_batch = valid_refined_prf_points_XY_batch
-                valid_refined_prf_points_YX_batch[:, [0, 1]] = valid_refined_prf_points_YX_batch[:, [1, 0]] # the CUDA code expected the (row, col) i.e. (y, x) convention
+                # valid_refined_prf_points_YX_batch = valid_refined_prf_points_XY_batch
+                # valid_refined_prf_points_YX_batch[:, [0, 1]] = valid_refined_prf_points_YX_batch[:, [1, 0]] # the CUDA code expected the (row, col) i.e. (y, x) convention
 
                 valid_refined_S_cpu_batch_list = []
                 for concat_item_idx in range(num_concatenation_items):
                     stimulus_task_name = arr_Y_signals_cpu[concat_item_idx].task_name
                     task_specific_stimulus = task_specific_data_dict[stimulus_task_name].stimulus
-                    valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_YX_batch, prf_model, task_specific_stimulus)
+                    valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, task_specific_stimulus)
                     valid_refined_S_cpu_batch_list.append(valid_refined_S_cpu_batch)
 
                 # current Y-BATCH compute concatenated R2        
