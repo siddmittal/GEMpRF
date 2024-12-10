@@ -173,7 +173,11 @@ class GEMpRFAnalysis:
         num_found_concatenated_items = len(measured_data_info_list)
         if num_specified_concatenated_items != num_found_concatenated_items:
             raise ValueError(f"Number of specified concatenated items ({num_specified_concatenated_items}) does not match the number of found concatenated items ({num_found_concatenated_items})")
-        
+
+        # Making sure that each measured_data_info_list is sorted based on the filepath
+        for sublist in measured_data_info_list:            
+            sublist.sort(key=lambda x: x[0]) # Sort each sublist based on the filepath (sublist[i][0])
+
         required_concatenations_info = []
         for items_to_be_concatenated_info in zip(*measured_data_info_list):
             input_filepaths = [item[0] for item in items_to_be_concatenated_info]

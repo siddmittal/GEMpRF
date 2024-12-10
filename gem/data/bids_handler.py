@@ -203,7 +203,7 @@ class GemBidsHandler:
         ses = concatenation_result_info['ses']        
         
         base_path = os.path.join(base_path, 'derivatives', 'prfanalyze-gem', f'analysis-{results_anaylsis_id}', f'sub-{sub}', f'ses-{ses}')    
-        os.makedirs(base_path, exist_ok=True)
+        # os.makedirs(base_path, exist_ok=True)
 
         filepath = os.path.join(base_path, concatenated_result_filename + '_estimates.json')
 
