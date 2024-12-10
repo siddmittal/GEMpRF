@@ -51,9 +51,7 @@ class RefineFit:
                 if(ONLY_SIGNLE_SIGNAL):     
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, block_flat_indices].T)[0]))
                 else:
-                    de_dtheta_vec = de_dtheta_list_cpu[theta, y_idx, block_flat_indices]
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, y_idx, block_flat_indices].T)[0]))
-                    vec
 
             vec = vec[:, non_NaN_e_row_indices]
             vec = vec.T.reshape(-1)
@@ -62,6 +60,15 @@ class RefineFit:
             if type(vec) is cp.ndarray:
                 vec = cp.asnumpy(vec)
 
+            # compute non_nan_indices for M matrix            
+            if len(non_NaN_e_row_indices) != len(block_flat_indices): # i.e. some of the indices are NaN
+                non_NaN_e_row_indices = cp.asnumpy(non_NaN_e_row_indices)
+                good_indices_M = []
+                num_linear_equations = num_params + 1
+                for i in non_NaN_e_row_indices:
+                    good_indices_M.extend(range(i * num_linear_equations, (i + 1) * num_linear_equations))
+                MpInv = MpInv[:, good_indices_M]
+                                
             # compute the coefficients
             coefficients = MpInv@vec                        
             A, B, C = CoefficientMatrix.create_cofficients_matrices_A_B_and_C(coefficients)
