@@ -59,14 +59,23 @@ class GridFit:
 
             # allocate chunks
             # chunk_e_result_gpu  = cp.zeros((total_y_signals, num_signals_current_batch), dtype=cp.float64)  # NOTE: Commented on March 2024, because it's not needed
+            chunk_de_dtheta_gpu = [None] * num_theta_params                
             with cp.cuda.Device(device_id):
                 current_device_Y_signals = Y_signals_gpu if device_id == 0 else cp.array(Y_signals_gpu)
                 chunk_e_result_gpu = cls.compute_error_term(current_device_Y_signals, S_prime_cm_gpu_batches[batch_idx])
 
                 # derivates --- on GPU/CPU
                 for theta in range(num_theta_params):
-                    de_dtheta_batches_list[theta][:, column_idx : column_idx + num_signals_current_batch] = cls._compute_derivative_error_term(isResultOnGPU, current_device_Y_signals, dS_prime_dtheta_cm_gpu_batches_list[theta][batch_idx], chunk_e_result_gpu)
-                                                        
+                    chunk_de_dtheta_gpu[theta] = cls._compute_derivative_error_term(isResultOnGPU, current_device_Y_signals, dS_prime_dtheta_cm_gpu_batches_list[theta][batch_idx], chunk_e_result_gpu)
+
+            # NOTE: dealing with the warning message about array allocated on a different device (Peer Access)
+            for theta in range(num_theta_params):
+                if isResultOnGPU: # i.e. in case of concatenated runs, we want the errors to stay on GPU
+                    with cp.cuda.Device(0):                    
+                        de_dtheta_batches_list[theta][:, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta] if chunk_de_dtheta_gpu[theta].device.id ==0 else cp.asarray(chunk_de_dtheta_gpu[theta])
+                else:
+                    de_dtheta_batches_list[theta][:, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta]
+
             # finally, get the "error" result back to device-0
             with cp.cuda.Device(0):
                 if device_id == 0:
