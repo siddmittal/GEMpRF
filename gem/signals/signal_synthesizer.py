@@ -114,10 +114,33 @@ class SignalSynthesizer:
 
         return stimulus_data_selected_gpu, stimulus_x_range, stimulus_y_range
 
+    @classmethod 
+    def get_available_gpus(cls, total_model_signals, cfg):
+        if total_model_signals > 1:
+            # check if user has specified the additional GPUs to be used (ADDITONAL available GPUs details: we consider that the default GPU (0) is already available)
+            # ...if not, then we will use all the available GPUs
+            if cfg.gpu["additional_available_gpus"]['gpu'] is None: 
+                num_gpus = gpu_utils.get_number_of_gpus()
+                available_gpus = list(range(num_gpus))
+            # ...if yes, then we will use the user defined GPUs
+            else:       
+                additional_available_gpus = list(map(int, cfg.gpu["additional_available_gpus"]['gpu']))  # [1, 3]     
+                available_gpus = additional_available_gpus 
+                available_gpus.insert(0, 0) # adding the default GPU (0) to the list          
+                available_gpus = np.unique(np.array(available_gpus)) # [0, 1, 3]         
+                num_gpus = len(available_gpus)
+        else:
+            # we don't need to use multiple GPUs for a single signal
+            num_gpus = 1
+            available_gpus = [0]
+
+        return available_gpus, num_gpus
+
+
 
     @classmethod
     # def compute_signals_batches(cls, prf_space : PRFSpace, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None):  # NOTE: use Enum for derivative_wrt
-    def compute_signals_batches(cls, prf_multi_dim_points_cpu : cp.ndarray, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None):  # NOTE: use Enum for derivative_wrt
+    def compute_signals_batches(cls, prf_multi_dim_points_cpu : cp.ndarray, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None, cfg = None):  # NOTE: use Enum for derivative_wrt
         # results batches
         result_batches = [] 
 
@@ -135,17 +158,13 @@ class SignalSynthesizer:
         # # total_signals = len(prf_space.multi_dim_points_cpu)             
         total_signals = len(prf_multi_dim_points_cpu)             
         per_signal_and_model_curve_required_mem_gb = ((single_timecourse_length + model_curve_length) * 8) / (1024 ** 3) # 8 bytes per float64
-
-        # available GPUs details
+        
         if (derivative_wrt.value == -1): 
             cuda_kernel = prf_model.model_curves_kernel
         else:
             cuda_kernel = prf_model.derivatives_kernels_list[derivative_wrt.value]
 
-        if total_signals > 1:
-            num_gpus = gpu_utils.get_number_of_gpus()
-        else:
-            num_gpus = 1 # we don't need to use multiple GPUs for a single signal
+        available_gpus, num_gpus = SignalSynthesizer.get_available_gpus(total_signals, cfg)
 
         per_gpu_assigned_batch_size = np.max([1, int(total_signals / num_gpus) + 1]) # NOTE: "+1" to deal with the case where the division is fractional
 
@@ -153,7 +172,8 @@ class SignalSynthesizer:
         for gpu_idx in range(num_gpus):
             signal_rowmajor_batch_current_gpu = None              
 
-            with cp.cuda.Device(gpu_idx):  
+            selected_gpu_id = available_gpus[gpu_idx]
+            with cp.cuda.Device(selected_gpu_id):  
                 # get stimulus data on the selected GPU
                 stimulus_data, stimulus_x_range, stimulus_y_range = SignalSynthesizer.get_stimulus_data_on_selected_gpu(stimulus = stimulus, gpu_idx = gpu_idx)                    
                 signal_rowmajor_batch_current_gpu = cp.zeros((min(per_gpu_assigned_batch_size, total_signals - num_signals_computed), single_timecourse_length), dtype=cp.float64)                                

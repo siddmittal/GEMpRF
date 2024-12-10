@@ -112,15 +112,15 @@ class GEMpRFAnalysis:
         return cls.__selected_prf_model
 
     @classmethod    
-    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus):
+    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
         # model signals
-        S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
+        S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
 
         # model derivatives signals
         dS_dtheta_batches_list = []
         num_theta = prf_model.num_dimensions
         for theta_idx in range(num_theta):
-            dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx))
+            dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
             dS_dtheta_batches_list.append(dS_dtheta_batches)
 
         # Orthonormalized model + derivatives signals
@@ -193,8 +193,8 @@ class GEMpRFAnalysis:
         return required_concatenations_info
 
     @classmethod
-    def get_refined_signals_cpu(cls, refined_prf_params_XY : np.ndarray, prf_model : PRFModel, stimulus : Stimulus):
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_params_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
+    def get_refined_signals_cpu(cls, refined_prf_params_XY : np.ndarray, prf_model : PRFModel, stimulus : Stimulus, cfg):
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_params_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
         
         refined_S_cpu = []
         # refined signal batches could be present on different GPUs
@@ -210,9 +210,9 @@ class GEMpRFAnalysis:
         return refined_S_cpu
 
     @classmethod
-    def get_valid_refined_data(cls, refined_matching_results_XY, Y_signals_gpu, O_gpu, prf_model, stimulus, coarse_e_cpu,  best_fit_proj_cpu , coarse_pRF_estimations):
+    def get_valid_refined_data(cls, refined_matching_results_XY, Y_signals_gpu, O_gpu, prf_model, stimulus, coarse_e_cpu,  best_fit_proj_cpu , coarse_pRF_estimations, cfg):
         # refined S batches
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_matching_results_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_matching_results_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
 
         # refined S' batches
         orthonormalized_S_cm_gpu_batches, _ = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu,
@@ -275,10 +275,10 @@ class GEMpRFAnalysis:
             # validate if the refined pRF estimations are really improving the error value, and for the pRF points where error is getting worse, keep the coarse pRF estimations
             coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu] # NOTE: The coarse_estimation values are in YX format
             valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, Y_signals_gpu=Y_signals_batch_gpu,
-                                                                 O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations)
+                                                                 O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations, cfg=cfg)
 
             # compute timecourses for refined pRF estimated params
-            valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus)
+            valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus, cfg)
 
             # compute Variance Explained
             r2_results_batch = R2.get_r2_num_den_method_with_epsilon_as_yTs(Y_signals_batch_gpu, O_gpu, valid_refined_prf_points_XY_batch, valid_refined_S_cpu_batch).reshape(-1, 1)
@@ -334,7 +334,8 @@ class GEMpRFAnalysis:
                     prf_analysis.orthonormalized_S_batches, prf_analysis.orthonormalized_dS_dtheta_batches_list = cls.compute_orthonormalized_signals(O_gpu=O_gpu, 
                                                                                                                                                 prf_space= prf_space, 
                                                                                                                                                 prf_model= prf_model, 
-                                                                                                                                                stimulus= task_specific_stimulus) 
+                                                                                                                                                stimulus= task_specific_stimulus,
+                                                                                                                                                cfg = cfg) 
 
                     # add to dictionary
                     task_specific_data = TaskSpecificData(task_specific_stimulus, O_gpu, prf_analysis)
@@ -451,7 +452,7 @@ class GEMpRFAnalysis:
                 for concat_item_idx in range(num_concatenation_items):
                     stimulus_task_name = arr_Y_signals_cpu[concat_item_idx].task_name
                     task_specific_stimulus = task_specific_data_dict[stimulus_task_name].stimulus
-                    valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, task_specific_stimulus)
+                    valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, task_specific_stimulus, cfg)
                     valid_refined_S_cpu_batch_list.append(valid_refined_S_cpu_batch)
 
                 # current Y-BATCH compute concatenated R2        
@@ -518,7 +519,8 @@ class GEMpRFAnalysis:
         prf_analysis.orthonormalized_S_batches, prf_analysis.orthonormalized_dS_dtheta_batches_list = cls.compute_orthonormalized_signals(O_gpu=O_gpu, 
                                                                                                                                     prf_space= prf_space, 
                                                                                                                                     prf_model= prf_model, 
-                                                                                                                                    stimulus= stimulus)  
+                                                                                                                                    stimulus= stimulus,
+                                                                                                                                    cfg = cfg)  
         Logger.print_green_message("model signals computed...", print_file_name=False)
 
         #...get M-inverse matrix

@@ -101,7 +101,6 @@
     <default_gpu>0</default_gpu>
     <!-- Additional available GPUs -->
     <additional_available_gpus>
-      <gpu>0</gpu>
       <gpu>1</gpu>
       <gpu>3</gpu>
     </additional_available_gpus>
