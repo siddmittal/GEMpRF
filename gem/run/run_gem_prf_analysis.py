@@ -247,7 +247,7 @@ class GEMpRFAnalysis:
         # process bathches
         total_y_signals = Y_signals_cpu.shape[1]
         num_batches = int(cfg.measured_data["batches"])
-        batch_size = np.max(1, int(total_y_signals / num_batches)) # to deal with the situation of only one y_signal, which will result in batch_size = 0
+        batch_size = max(1, int(total_y_signals / num_batches)) # to deal with the situation of only one y_signal, which will result in batch_size = 0
         for current_batch_idx in range(0, total_y_signals, batch_size):
             Y_signals_batch_gpu = cp.asarray(Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size])
             Y_signals_batch_cpu = Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size]
