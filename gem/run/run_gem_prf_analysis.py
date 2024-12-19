@@ -406,7 +406,12 @@ class GEMpRFAnalysis:
                 # NOTE: process this batch of concatenation block
                 # ...sum up the error terms (e and de_dtheta) for all the runs
                 # ...current Y-BATCH concatenated error terms
-                concatenated_e_gpu = cp.add(*arr_e_cpu)
+                if len(arr_e_cpu) < 3: # i.e. two items to be concatenated
+                    concatenated_e_gpu = cp.add(*arr_e_cpu)
+                else:
+                    concatenated_e_gpu = arr_e_cpu[0]
+                    for arr in arr_e_cpu[1:]:
+                        concatenated_e_gpu = cp.add(concatenated_e_gpu, arr) # tried to use "concatenated_e_gpu = cp.add(*arr_e_cpu)" but cp.add() can work with only 2 or 3 arguments.
 
                 # sumup de_dtheta terms
                 # # # ...transpose the list of lists to group corresponding positions together
@@ -417,7 +422,13 @@ class GEMpRFAnalysis:
                     de_dtheta_from_all_runs = []
                     for concat_item_idx in range(num_concatenation_items):                                                
                         de_dtheta_from_all_runs.append(arr_de_dtheta_full_cpu[concat_item_idx][de_dtheta_idx])
-                    concatenated_de_dtheta_list_cpu.append(cp.asnumpy(cp.add(*de_dtheta_from_all_runs))) # sum-up
+                    if len(de_dtheta_from_all_runs) < 3: # i.e. two items to be concatenated
+                        concatenated_de_dtheta = cp.add(*de_dtheta_from_all_runs) # sum-up
+                    else:
+                        concatenated_de_dtheta = de_dtheta_from_all_runs[0]
+                        for arr in de_dtheta_from_all_runs[1:]:
+                            concatenated_de_dtheta = cp.add(concatenated_de_dtheta, arr)
+                    concatenated_de_dtheta_list_cpu.append(cp.asnumpy(concatenated_de_dtheta))
 
 
                 # current Y-BATCH concatenated best fit
