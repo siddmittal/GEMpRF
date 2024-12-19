@@ -116,7 +116,7 @@ class SignalSynthesizer:
 
     @classmethod 
     def get_available_gpus(cls, total_model_signals, cfg):
-        if total_model_signals > 1:
+        if( total_model_signals > 1) & (gpu_utils.get_number_of_gpus() > 1):
             # check if user has specified the additional GPUs to be used (ADDITONAL available GPUs details: we consider that the default GPU (0) is already available)
             # ...if not, then we will use all the available GPUs
             if cfg.gpu["additional_available_gpus"]['gpu'] is None: 
