@@ -183,8 +183,8 @@ class GEMpRFAnalysis:
             input_filepaths = [item[0] for item in items_to_be_concatenated_info]
             data_info_dictionaries_list = [item[1] for item in items_to_be_concatenated_info]    
             stimulus_info = [item[2] for item in items_to_be_concatenated_info]            
-            print(input_filepaths)
-            print(data_info_dictionaries_list)
+            # print(input_filepaths)
+            # print(data_info_dictionaries_list)
             concatenation_result_info = BidsConcatenationDataInfo.compare_and_merge_data_info_dicts(data_info_dictionaries_list)
             concatenated_result_filename = GemBidsHandler.get_concatenated_result_filepath(cfg.bids, input_filepaths[0], concatenation_result_info)
             concatenation_data_info = BidsConcatenationDataInfo(input_filepaths, data_info_dictionaries_list, stimulus_info, concatenation_result_info, concatenated_result_filename)
@@ -354,7 +354,9 @@ class GEMpRFAnalysis:
                 self.Y_signals_cpu = Y_signals_cpu
                 self.task_name = task_name
         # arr_Y_signals_cpu = []
+        counter = 0
         for concatenate_block_info in required_concatenations_info:            
+            counter += 1
             json_data = None   
             # Collect Y-Signals
             arr_Y_signals_cpu = []
@@ -365,7 +367,7 @@ class GEMpRFAnalysis:
                 if not os.path.exists(input_data_filepath):
                     raise ValueError(f"Input source file does not exist: {input_data_filepath}", print_file_name=False)
 
-                Logger.print_green_message(f"Processing data file: {input_data_filepath}...", print_file_name=False)
+                Logger.print_green_message(f"Processing-{counter}/{len(required_concatenations_info)} data file: {input_data_filepath}...", print_file_name=False)
                 measured_data_filepath = input_data_filepath
                   
                 # y-signals
