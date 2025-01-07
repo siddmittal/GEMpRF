@@ -32,7 +32,10 @@ class GridFit:
     @classmethod    
     def _get_error_terms_from_batches(cls, isResultOnGPU, Y_signals_gpu, S_prime_cm_gpu_batches, dS_prime_dtheta_cm_gpu_batches_list):        
         num_batches = len(S_prime_cm_gpu_batches)
-        num_theta_params = max(0, len(dS_prime_dtheta_cm_gpu_batches_list))
+        if dS_prime_dtheta_cm_gpu_batches_list is None:
+            num_theta_params = 0
+        else:
+            num_theta_params = max(0, len(dS_prime_dtheta_cm_gpu_batches_list))
 
         # compute total signals present across all the batches
         total_model_signals = 0
@@ -135,7 +138,8 @@ class GridFit:
         e_gpu, de_dtheta_list_gpu = cls._get_error_terms_from_batches(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu)
                 
         # best fit
-        best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
+        # best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
+        best_fit_proj_cpu = cp.asnumpy(cp.nanargmax(e_gpu, axis=1)) #  optimized version of the above line
     
         ###---return results on CPU or GPU
         # GPU result
@@ -156,21 +160,21 @@ class GridFit:
                 
     @classmethod
     # Note: all ORTHOGONALIZED signals "S" are assumed along Columns
-    def get_only_error_terms(cls, isResultOnGPU, Y_signals_gpu, S_prime_columnmajor_gpu):
-        e_gpu = cls.get_error_terms(isResultOnGPU, Y_signals_gpu, S_prime_columnmajor_gpu, None)
+    def get_only_error_terms(cls, isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu): # NOTE: "dS_prime_dtheta_cm_batches_list_gpu" is placed to maintain same signature as "get_error_terms"
+        best_fit_proj_cpu, e_gpu, _ = cls.get_error_terms(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, None)
                 
-        # best fit
-        best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
+        # # best fit
+        # best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
     
         ###---return results on CPU or GPU
-        # CPU result
+        # GPU result
         if isResultOnGPU:
             return cp.asarray(best_fit_proj_cpu), e_gpu
         
-        # GPU result
+        # CPU result
         else:            
             best_fit_proj_cpu = cp.asnumpy(best_fit_proj_cpu)
             e_cpu = cp.asnumpy(e_gpu)
 
-            return best_fit_proj_cpu, e_cpu
+            return best_fit_proj_cpu, e_cpu, None
 

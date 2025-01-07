@@ -118,10 +118,11 @@ class GEMpRFAnalysis:
 
         # model derivatives signals
         dS_dtheta_batches_list = []
-        num_theta = prf_model.num_dimensions
-        for theta_idx in range(num_theta):
-            dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
-            dS_dtheta_batches_list.append(dS_dtheta_batches)
+        if cfg.refine_fitting_enabled:
+            num_theta = prf_model.num_dimensions
+            for theta_idx in range(num_theta):
+                dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
+                dS_dtheta_batches_list.append(dS_dtheta_batches)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
@@ -254,7 +255,8 @@ class GEMpRFAnalysis:
 
             # error
             # prf_analysis.error_e = (Y_signals_batch_gpu.T @ dS_prime_dtheta_columnmajor_gpu)
-            best_fit_proj_cpu, e_cpu, de_dtheta_list_cpu = GridFit.get_error_terms(isResultOnGPU=False, 
+            error_term_computation_func = GridFit.get_error_terms if cfg.refine_fitting_enabled else GridFit.get_only_error_terms
+            best_fit_proj_cpu, e_cpu, de_dtheta_list_cpu = error_term_computation_func(isResultOnGPU=False, 
                                                                 Y_signals_gpu=Y_signals_batch_gpu, 
                                                                 S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches, 
                                                                 dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
@@ -263,19 +265,25 @@ class GEMpRFAnalysis:
 
             # NOTE: RefineFit produces results in (X, Y) format
             # perform refine search, the obtained refined results will be in the (X, Y) format
-            num_Y_signals = Y_signals_batch_cpu.shape[1]
-            refined_matching_results_XY, Fex_results = RefineFit.get_refined_fit_results(
-                prf_space,
-                num_Y_signals,
-                best_fit_proj_cpu,
-                arr_2d_location_inv_M_cpu,
-                e_cpu,
-                de_dtheta_list_cpu) 
+            if cfg.refine_fitting_enabled:
+                num_Y_signals = Y_signals_batch_cpu.shape[1]
+                refined_matching_results_XY, Fex_results = RefineFit.get_refined_fit_results(
+                    prf_space,
+                    num_Y_signals,
+                    best_fit_proj_cpu,
+                    arr_2d_location_inv_M_cpu,
+                    e_cpu,
+                    de_dtheta_list_cpu) 
         
+            
+            coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu] # NOTE: The coarse_estimation values are in XY format (i.e. (col, row) format)
+            
             # validate if the refined pRF estimations are really improving the error value, and for the pRF points where error is getting worse, keep the coarse pRF estimations
-            coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu] # NOTE: The coarse_estimation values are in YX format
-            valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, Y_signals_gpu=Y_signals_batch_gpu,
-                                                                 O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations, cfg=cfg)
+            if cfg.refine_fitting_enabled:
+                valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, Y_signals_gpu=Y_signals_batch_gpu,
+                                                                    O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations, cfg=cfg)
+            else:
+                valid_refined_prf_points_XY_batch = coarse_pRF_estimations
 
             # compute timecourses for refined pRF estimated params
             valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus, cfg)
@@ -518,9 +526,10 @@ class GEMpRFAnalysis:
         stimulus = GEMpRFAnalysis.load_stimulus(cfg)
 
         # M-Matrix
-        result_queue = queue.Queue()    
-        MpInv_thread = threading.Thread(target=cls.execute_Grids2MpInv_NewMethod, args=(prf_space, result_queue))
-        MpInv_thread.start()
+        if cfg.refine_fitting_enabled:
+            result_queue = queue.Queue()    
+            MpInv_thread = threading.Thread(target=cls.execute_Grids2MpInv_NewMethod, args=(prf_space, result_queue))
+            MpInv_thread.start()
 
         #...get Orthogonalization matrix
         ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=stimulus.NumFrames)
@@ -537,12 +546,13 @@ class GEMpRFAnalysis:
         Logger.print_green_message("model signals computed...", print_file_name=False)
 
         #...get M-inverse matrix
-        inv_mat_join_start_time = datetime.datetime.now()
         arr_2d_location_inv_M_cpu = None
-        MpInv_thread.join()
-        if not result_queue.empty():
-            arr_2d_location_inv_M_cpu = result_queue.get()
-        Logger.print_green_message(f"Time taken to compute M-inverse matrix: {datetime.datetime.now() - inv_mat_join_start_time}", print_file_name=False)
+        if cfg.refine_fitting_enabled:
+            inv_mat_join_start_time = datetime.datetime.now()            
+            MpInv_thread.join()
+            if not result_queue.empty():
+                arr_2d_location_inv_M_cpu = result_queue.get()
+            Logger.print_green_message(f"Time taken to compute M-inverse matrix: {datetime.datetime.now() - inv_mat_join_start_time}", print_file_name=False)
 
         # # end time
         # end_time = time.time()

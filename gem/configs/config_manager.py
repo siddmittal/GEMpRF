@@ -104,6 +104,9 @@ class ConfigurationWrapper:
         # GPU
         cls.gpu = cls.config_data.get("gpu")           
 
+        # Enable/disable Refine fitting  
+        cls.refine_fitting_enabled = True if cls.config_data.get("refine_fitting", {}).get("@enable", "false").lower() == "true" else False
+
 # Usage:
 if __name__ == "__main__":
     ConfigurationWrapper.load_configuration(RunType.ANALYSIS)
