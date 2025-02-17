@@ -408,7 +408,7 @@ class GEMpRFAnalysis:
                     _, e_gpu, de_dtheta_full_list_gpu = GridFit.get_error_terms(isResultOnGPU=True, 
                                                             Y_signals_gpu=Y_signals_batch_gpu, 
                                                             S_prime_cm_batches_gpu= task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_S_batches, 
-                                                            dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
+                                                            dS_prime_dtheta_cm_batches_list_gpu=task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_dS_dtheta_batches_list)
                 
                     arr_e_cpu.append(e_gpu)
                     arr_de_dtheta_full_cpu.append(de_dtheta_full_list_gpu)
