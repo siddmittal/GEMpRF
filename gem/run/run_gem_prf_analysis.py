@@ -600,7 +600,11 @@ class GEMpRFAnalysis:
     @classmethod
     def run(cls, config_filepath = None, spatial_points_xy = None):
         cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
-        
+
+        # copy the config file to the results folder
+        result_dir = os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids.get("results_anaylsis_id")}')
+        shutil.copy(config_filepath, result_dir) if os.makedirs(result_dir, exist_ok=True) is None else None
+
         # ...prf spatial points
         if spatial_points_xy is None:
             spatial_points_yx = GEMpRFAnalysis.get_prf_spatial_points(cfg) # this will return the spatial points in (row/y, col/x) format
@@ -625,10 +629,6 @@ class GEMpRFAnalysis:
             GEMpRFAnalysis.concatenated_run(cfg, prf_model, prf_space)
         else:
             GEMpRFAnalysis.individual_run(cfg, prf_model, prf_space)        
-
-        # copy the config file to the results folder
-        config_filename = os.path.basename(config_filepath)
-        shutil.copy(config_filepath, os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids.get("results_anaylsis_id")}' , config_filename))
 
         return 0
 
