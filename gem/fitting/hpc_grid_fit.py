@@ -66,6 +66,7 @@ class GridFit:
             with cp.cuda.Device(device_id):
                 current_device_Y_signals = Y_signals_gpu if device_id == 0 else cp.array(Y_signals_gpu)
                 chunk_e_result_gpu = cls.compute_error_term(current_device_Y_signals, S_prime_cm_gpu_batches[batch_idx])
+                chunk_e_result_gpu[cp.isinf(chunk_e_result_gpu) & (chunk_e_result_gpu > 0)] = -cp.inf # replace +inf with -inf so that indices with "inf" are not seleted as best fit at the argmax() step
 
                 # derivates --- on GPU/CPU
                 for theta in range(num_theta_params):
@@ -136,7 +137,9 @@ class GridFit:
 
         # all in one
         e_gpu, de_dtheta_list_gpu = cls._get_error_terms_from_batches(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu)
-                
+
+        e_gpu[cp.isinf(e_gpu) & (e_gpu > 0)] = -cp.inf # replace +inf with -inf so that indices with "inf" are not seleted as best fit
+
         # best fit
         # best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
         best_fit_proj_cpu = cp.asnumpy(cp.nanargmax(e_gpu, axis=1)) #  optimized version of the above line
