@@ -261,7 +261,7 @@ class GEMpRFAnalysis:
                                                                 S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches, 
                                                                 dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
             
-            Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
+            # Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
 
             # NOTE: RefineFit produces results in (X, Y) format
             # perform refine search, the obtained refined results will be in the (X, Y) format
@@ -502,7 +502,7 @@ class GEMpRFAnalysis:
                 else:
                     json_data += batch_json_data
 
-                print ("Refined fitting done...")
+                # print ("Refined fitting done...")
 
             # NOTE: Write the full results of the current concatenation block to file
             JsonMgr.write_to_file(filepath=concatenate_block_info.concatenation_result_filepath, data=json_data)   
@@ -594,6 +594,7 @@ class GEMpRFAnalysis:
             # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\iteration_times_151x151x16.csv"
             # df = pd.DataFrame({'DataSrc': data_src, 'Time (seconds)': iteration_times})
             # df.to_csv(csv_filepath, index=False)
+        print ("All files processed...")
 
       
 
@@ -651,6 +652,7 @@ if __name__ == "__main__":
 
     # config_filepath = r'D:\code\sid-git\fmri\gem\configs\default_config\new_concatenationDummyTest_config.xml'
     # GEMpRFAnalysis.concatenated_run(config_filepath)
+    print("Starting GEM analysis...")
     GEMpRFAnalysis.run(config_filepath)
     # profiler.disable()
 
