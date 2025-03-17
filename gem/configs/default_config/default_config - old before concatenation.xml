@@ -12,6 +12,7 @@
 <root>
   <!-- Path information -->
   <path_to_append>/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/fmri/</path_to_append>
+  <refine_fitting enable="True"/>
 
   <!-- Input Data -->
   <input_datasrc>    
