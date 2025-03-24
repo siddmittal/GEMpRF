@@ -22,6 +22,7 @@ from gem.model.prf_model import GaussianModelParams
 from gem.model.prf_model import DoGModelParams
 from gem.utils.hpc_cupy_utils import HpcUtils as gpu_utils
 from gem.utils.logger import Logger
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 DEBUG = False
 
@@ -101,12 +102,13 @@ class SignalSynthesizer:
         return signal_rowmajor_gpu
     
     @classmethod
-    def get_stimulus_data_on_selected_gpu(cls, stimulus : Stimulus, gpu_idx : int):
+    def get_stimulus_data_on_selected_gpu(cls, stimulus : Stimulus, selected_device_id : int):
         # transfer stimulus data on the selected device, if the selecte device is not 0
-        if(gpu_idx != 0):
-            stimulus_data_selected_gpu = cp.asarray(stimulus.stimulus_data_cpu)
-            stimulus_x_range = cp.asarray(stimulus.x_range_cpu)
-            stimulus_y_range = cp.asarray(stimulus.y_range_cpu)
+        if(ggm.get_instance().default_gpu_id != selected_device_id):
+            with cp.cuda.Device(selected_device_id):
+                stimulus_data_selected_gpu = cp.asarray(stimulus.stimulus_data_cpu)
+                stimulus_x_range = cp.asarray(stimulus.x_range_cpu)
+                stimulus_y_range = cp.asarray(stimulus.y_range_cpu)
         else:
             stimulus_data_selected_gpu = stimulus.stimulus_data_gpu
             stimulus_x_range = stimulus.x_range_gpu
@@ -119,14 +121,14 @@ class SignalSynthesizer:
         if( total_model_signals > 1) & (gpu_utils.get_number_of_gpus() > 1):
             # check if user has specified the additional GPUs to be used (ADDITONAL available GPUs details: we consider that the default GPU (0) is already available)
             # ...if not, then we will use all the available GPUs
-            if cfg.gpu["additional_available_gpus"]['gpu'] is None: 
-                num_gpus = gpu_utils.get_number_of_gpus()
-                available_gpus = list(range(num_gpus))
+            if cfg.gpu["additional_available_gpus"] is None: # in this case, we use only the default defined GPU
+                num_gpus = 1
+                available_gpus = [ggm.get_instance().default_gpu_id]
             # ...if yes, then we will use the user defined GPUs
             else:       
                 additional_available_gpus = list(map(int, cfg.gpu["additional_available_gpus"]['gpu']))  # [1, 3]     
                 available_gpus = additional_available_gpus 
-                available_gpus.insert(0, 0) # adding the default GPU (0) to the list          
+                available_gpus.insert(0, ggm.get_instance().default_gpu_id) # adding the default GPU to the list          
                 available_gpus = np.unique(np.array(available_gpus)) # [0, 1, 3]         
                 num_gpus = len(available_gpus)
         else:
@@ -175,14 +177,14 @@ class SignalSynthesizer:
             selected_gpu_id = available_gpus[gpu_idx]
             with cp.cuda.Device(selected_gpu_id):  
                 # get stimulus data on the selected GPU
-                stimulus_data, stimulus_x_range, stimulus_y_range = SignalSynthesizer.get_stimulus_data_on_selected_gpu(stimulus = stimulus, gpu_idx = gpu_idx)                    
+                stimulus_data, stimulus_x_range, stimulus_y_range = SignalSynthesizer.get_stimulus_data_on_selected_gpu(stimulus = stimulus, selected_device_id = selected_gpu_id)                    
                 signal_rowmajor_batch_current_gpu = cp.zeros((min(per_gpu_assigned_batch_size, total_signals - num_signals_computed), single_timecourse_length), dtype=cp.float64)                                
                                             
-                available_bytes = gpu_utils.device_available_mem_bytes(device_id=gpu_idx)                                
+                available_bytes = gpu_utils.device_available_mem_bytes(device_id=selected_gpu_id)                                
                 possible_batch_size = int((available_bytes / (1024 ** 3)) / (per_signal_and_model_curve_required_mem_gb * 1.2)) # additional "1.2" because, we will also be needing memory for the signal timecourses so, better be safe !!!
 
                 if possible_batch_size < 1 and num_gpus > 1: # if we have only 1 GPU, then usually the unified memory is used, so we can still compute the signals
-                    raise ValueError(f"Not enough GPU memory available on device-{gpu_idx}.\nAvailable (Gigabytes) = {available_bytes / (1024 ** 3)}, Required (Gigabytes) = {(per_signal_and_model_curve_required_mem_gb * 1.2) / (1024 ** 3)}.\nGEM-pRF cannot compute further model signals !!!")
+                    raise ValueError(f"Not enough GPU memory available on device-{selected_gpu_id}.\nAvailable (Gigabytes) = {available_bytes / (1024 ** 3)}, Required (Gigabytes) = {(per_signal_and_model_curve_required_mem_gb * 1.2) / (1024 ** 3)}.\nGEM-pRF cannot compute further model signals !!!")
                 
                 selected_gpu_possible_signals_chunk_size = per_gpu_assigned_batch_size if per_gpu_assigned_batch_size <= possible_batch_size else possible_batch_size 
                 if selected_gpu_possible_signals_chunk_size < 1 and num_gpus == 1:
@@ -234,7 +236,7 @@ class SignalSynthesizer:
         for batch_idx in range(len(model_signals_rm_batches)):
             gpu_device_id = model_signals_rm_batches[batch_idx].device.id
             with cp.cuda.Device(gpu_device_id):  
-                O_gpu_current_device = O_gpu if gpu_device_id == 0 else cp.array(O_gpu) 
+                O_gpu_current_device = O_gpu if gpu_device_id == ggm.get_instance().default_gpu_id else cp.array(O_gpu) 
                 S_star_columnmajor_gpu = cp.dot(O_gpu_current_device, model_signals_rm_batches[batch_idx].T)
 
                 # need a take care the number of signals we have in the batch

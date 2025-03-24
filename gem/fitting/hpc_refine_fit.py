@@ -8,6 +8,7 @@ from gem.space.PRFSpace import PRFSpace
 
 from gem.fitting.hpc_coefficient_matrix import CoefficientMatrix
 from gem.utils.hpc_cupy_utils import HpcUtils as Utils
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 # debugging purpose
 import nibabel as nib
@@ -41,7 +42,10 @@ class RefineFit:
             MpInv = arr_2d_location_inv_M_cpu[best_s_idx] # NOTE: This is the correct way for the program, but for debugging, I am not using it and computing it again       
         
             #...compute the de/dx, de/dy and de/dsigma vectors# 
-            e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2      
+            if type(e_full) is cp.ndarray:
+                default_gpu_id = ggm.get_instance().default_gpu_id
+                with cp.cuda.Device(default_gpu_id):
+                    e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2      
             if len(e_vec) == 1: # i.e. no other neighbours
                 vec = e_vec.squeeze()
             else:              
@@ -58,7 +62,8 @@ class RefineFit:
 
             # in case of concatenation runs, we have `vec` as cupy array
             if type(vec) is cp.ndarray:
-                vec = cp.asnumpy(vec)
+                with cp.cuda.Device(default_gpu_id):
+                    vec = cp.asnumpy(vec)
 
             # compute non_nan_indices for M matrix            
             if len(non_NaN_e_row_indices) != len(block_flat_indices): # i.e. some of the indices are NaN

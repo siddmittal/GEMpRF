@@ -47,6 +47,7 @@ from gem.data.bids_handler import GemBidsHandler
 from gem.data.gem_bids_concatenation_data_info import BidsConcatenationDataInfo
 from gem.data.gem_stimulus_file_info import StimulusFileInfo
 from gem.tools.json_file_operations import JsonMgr
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 class GEMpRFAnalysis:
     # HRF Curve
@@ -250,7 +251,7 @@ class GEMpRFAnalysis:
         num_batches = int(cfg.measured_data["batches"])
         batch_size = max(1, int(total_y_signals / num_batches)) # to deal with the situation of only one y_signal, which will result in batch_size = 0
         for current_batch_idx in range(0, total_y_signals, batch_size):
-            Y_signals_batch_gpu = cp.asarray(Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size])
+            Y_signals_batch_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size],))
             Y_signals_batch_cpu = Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size]
 
             # error
@@ -261,7 +262,7 @@ class GEMpRFAnalysis:
                                                                 S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches, 
                                                                 dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
             
-            Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
+            # Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
 
             # NOTE: RefineFit produces results in (X, Y) format
             # perform refine search, the obtained refined results will be in the (X, Y) format
@@ -307,6 +308,7 @@ class GEMpRFAnalysis:
     @classmethod
     def concatenated_run(cls, cfg, prf_model, prf_space):
         # cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
+        default_gpu_id = ggm.get_instance().default_gpu_id
         
         # data info
         required_concatenations_info = cls.get_concatenated_runs_data_files_info(cfg)
@@ -400,7 +402,7 @@ class GEMpRFAnalysis:
                 Y_signals_batch_gpu_list = []
                 for concat_item_idx in range(num_concatenation_items):                                
                     # current Y-BATCH, for current dataset
-                    Y_signals_batch_gpu = cp.asarray((arr_Y_signals_cpu[concat_item_idx].Y_signals_cpu)[:, current_batch_idx: current_batch_idx + batch_size])    
+                    Y_signals_batch_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=((arr_Y_signals_cpu[concat_item_idx].Y_signals_cpu)[:, current_batch_idx: current_batch_idx + batch_size],))                                        
                     Y_signals_batch_gpu_list.append(Y_signals_batch_gpu)            
                     Y_signals_batch_cpu = (arr_Y_signals_cpu[concat_item_idx].Y_signals_cpu)[:, current_batch_idx: current_batch_idx + batch_size]
                     num_Y_signals_in_batch = Y_signals_batch_cpu.shape[1] # this is just the number of Y-signals in the current batch, it is independent of the task-name
@@ -408,7 +410,7 @@ class GEMpRFAnalysis:
                     _, e_gpu, de_dtheta_full_list_gpu = GridFit.get_error_terms(isResultOnGPU=True, 
                                                             Y_signals_gpu=Y_signals_batch_gpu, 
                                                             S_prime_cm_batches_gpu= task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_S_batches, 
-                                                            dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
+                                                            dS_prime_dtheta_cm_batches_list_gpu=task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_dS_dtheta_batches_list)
                 
                     arr_e_cpu.append(e_gpu)
                     arr_de_dtheta_full_cpu.append(de_dtheta_full_list_gpu)
@@ -416,34 +418,37 @@ class GEMpRFAnalysis:
                 # NOTE: process this batch of concatenation block
                 # ...sum up the error terms (e and de_dtheta) for all the runs
                 # ...current Y-BATCH concatenated error terms
-                if len(arr_e_cpu) < 3: # i.e. two items to be concatenated
-                    concatenated_e_gpu = cp.add(*arr_e_cpu)
-                else:
-                    concatenated_e_gpu = arr_e_cpu[0]
-                    for arr in arr_e_cpu[1:]:
-                        concatenated_e_gpu = cp.add(concatenated_e_gpu, arr) # tried to use "concatenated_e_gpu = cp.add(*arr_e_cpu)" but cp.add() can work with only 2 or 3 arguments.
+                with cp.cuda.Device(default_gpu_id):
+                    if len(arr_e_cpu) < 3: # i.e. two items to be concatenated
+                        concatenated_e_gpu = cp.add(*arr_e_cpu)
+                    else:
+                        concatenated_e_gpu = arr_e_cpu[0]
+                        for arr in arr_e_cpu[1:]:
+                            concatenated_e_gpu = cp.add(concatenated_e_gpu, arr) # tried to use "concatenated_e_gpu = cp.add(*arr_e_cpu)" but cp.add() can work with only 2 or 3 arguments.
 
                 # sumup de_dtheta terms
                 # # # ...transpose the list of lists to group corresponding positions together
                 # # transposed_arr_de_dtheta_full_list_gpu = list(map(list, zip(*arr_de_dtheta_full_cpu)))                
                 # # concatenated_de_dtheta_list = [cp.sum(cp.stack(arrays, axis=0), axis=0) for arrays in transposed_arr_de_dtheta_full_list_gpu] # Sum the corresponding positions
-                concatenated_de_dtheta_list_cpu = []
-                for de_dtheta_idx in range(prf_model.num_dimensions):
-                    de_dtheta_from_all_runs = []
-                    for concat_item_idx in range(num_concatenation_items):                                                
-                        de_dtheta_from_all_runs.append(arr_de_dtheta_full_cpu[concat_item_idx][de_dtheta_idx])
-                    if len(de_dtheta_from_all_runs) < 3: # i.e. two items to be concatenated
-                        concatenated_de_dtheta = cp.add(*de_dtheta_from_all_runs) # sum-up
-                    else:
-                        concatenated_de_dtheta = de_dtheta_from_all_runs[0]
-                        for arr in de_dtheta_from_all_runs[1:]:
-                            concatenated_de_dtheta = cp.add(concatenated_de_dtheta, arr)
-                    concatenated_de_dtheta_list_cpu.append(cp.asnumpy(concatenated_de_dtheta))
+                with cp.cuda.Device(default_gpu_id):
+                    concatenated_de_dtheta_list_cpu = []
+                    for de_dtheta_idx in range(prf_model.num_dimensions):
+                        de_dtheta_from_all_runs = []
+                        for concat_item_idx in range(num_concatenation_items):                                                
+                            de_dtheta_from_all_runs.append(arr_de_dtheta_full_cpu[concat_item_idx][de_dtheta_idx])
+                        if len(de_dtheta_from_all_runs) < 3: # i.e. two items to be concatenated
+                            concatenated_de_dtheta = cp.add(*de_dtheta_from_all_runs) # sum-up
+                        else:
+                            concatenated_de_dtheta = de_dtheta_from_all_runs[0]
+                            for arr in de_dtheta_from_all_runs[1:]:
+                                concatenated_de_dtheta = cp.add(concatenated_de_dtheta, arr)
+                        concatenated_de_dtheta_list_cpu.append(cp.asnumpy(concatenated_de_dtheta))
 
 
                 # current Y-BATCH concatenated best fit
-                best_fit_proj_gpu = np.nanargmax(concatenated_e_gpu, axis=1)
-                best_fit_proj_cpu = cp.asnumpy(best_fit_proj_gpu)
+                with cp.cuda.Device(default_gpu_id):
+                    best_fit_proj_gpu = np.nanargmax(concatenated_e_gpu, axis=1)
+                    best_fit_proj_cpu = cp.asnumpy(best_fit_proj_gpu)
 
                 #  current Y-BATCH refine fit
                 refined_matching_results_XY, _ = RefineFit.get_refined_fit_results(
@@ -502,7 +507,7 @@ class GEMpRFAnalysis:
                 else:
                     json_data += batch_json_data
 
-                print ("Refined fitting done...")
+                # print ("Refined fitting done...")
 
             # NOTE: Write the full results of the current concatenation block to file
             JsonMgr.write_to_file(filepath=concatenate_block_info.concatenation_result_filepath, data=json_data)   
@@ -570,7 +575,7 @@ class GEMpRFAnalysis:
                 continue
 
             start_time = time.time()
-            Logger.print_green_message(f"Processing data file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
+            Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
             valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu = GEMpRFAnalysis.get_pRF_estimations(cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_list[data_idx])
 
             # format results to JSON                
@@ -594,6 +599,7 @@ class GEMpRFAnalysis:
             # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\iteration_times_151x151x16.csv"
             # df = pd.DataFrame({'DataSrc': data_src, 'Time (seconds)': iteration_times})
             # df.to_csv(csv_filepath, index=False)
+        print ("All files processed...")
 
       
 

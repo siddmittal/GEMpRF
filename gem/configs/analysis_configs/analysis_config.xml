@@ -12,6 +12,7 @@
 <root>
   <!-- Path information -->
   <path_to_append>.../</path_to_append>
+  <refine_fitting enable="True"/>
 
   <!-- Stimulus data -->
   <stimulus>
@@ -102,6 +103,7 @@
     <!-- Additional available GPUs -->
     <additional_available_gpus>
       <gpu>1</gpu>
+      <gpu>2</gpu>
       <gpu>3</gpu>
     </additional_available_gpus>
   </gpu>
