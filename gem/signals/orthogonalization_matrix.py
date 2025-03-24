@@ -10,6 +10,7 @@
 """
 import numpy as np
 import cupy as cp
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 class OrthoMatrix:
     def __init__(self, nDCT, num_frame_stimulus):
@@ -31,8 +32,9 @@ class OrthoMatrix:
         q, r = np.linalg.qr(trends) # QR decomposition
         q *= np.sign(q[0, 0]) # sign function returns -1 if x < 0, 0 if x==0, 1 if x > 0
 
-        R_gpu = cp.asarray(q)
-        self.O_gpu = (cp.eye(self.num_frame_stimulus)  - cp.dot(R_gpu, R_gpu.T))
+        with cp.cuda.Device(ggm.get_instance().default_gpu_id):
+            R_gpu = cp.asarray(q)
+            self.O_gpu = (cp.eye(self.num_frame_stimulus)  - cp.dot(R_gpu, R_gpu.T))
 
         return self.O_gpu
 

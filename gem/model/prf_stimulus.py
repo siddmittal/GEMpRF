@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import nibabel as nib
 from scipy.ndimage import zoom
 import os
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 class Stimulus:
     def __init__(self, relative_file_path, size_in_degrees, stim_config):
@@ -21,8 +22,8 @@ class Stimulus:
         self.height = int(stim_config["height"])
         self.x_range_cpu = np.linspace(-float(stim_config["visual_field"]), +float(stim_config["visual_field"]), int(stim_config["width"]))
         self.y_range_cpu = np.linspace(-float(stim_config["visual_field"]), +float(stim_config["visual_field"]), int(stim_config["height"]))
-        self.x_range_gpu = cp.asarray(self.x_range_cpu)
-        self.y_range_gpu = cp.asarray(self.y_range_cpu)
+        self.x_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.x_range_cpu,))
+        self.y_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.y_range_cpu,))
 
     """Column major stimulus data on GPU"""
     @property
@@ -75,7 +76,7 @@ class Stimulus:
 
         # GPU
         if self.__flattened_columnmajor_stimulus_data_gpu is None:
-            stimulus_flat_data_gpu = cp.asarray(stimulus_flat_data_cpu)
+            stimulus_flat_data_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(stimulus_flat_data_cpu,))
             stim_height, stim_width, stim_frames = self.resampled_data.shape
             self.__flattened_columnmajor_stimulus_data_gpu = cp.reshape(stimulus_flat_data_gpu, (stim_height * stim_width, stim_frames), order='F') # each column contains a flat stimulus frame
 

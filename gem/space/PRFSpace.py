@@ -19,6 +19,7 @@ from numba_kdtree import KDTree
 from numba import njit
 from typing import Callable
 from joblib import Parallel, delayed, parallel_backend
+from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
 #################################---------------------------------NUMBA Compatible Functions---------------------------------#################################
 @njit(cache=True, nogil=True)
@@ -301,7 +302,7 @@ class PRFSpace:
             cupy.ndarray: The multi-dimensional points array.
         """
         if self.__multi_dim_points_arr_gpu is None:
-            self.__multi_dim_points_arr_gpu = cp.asarray(self.__all_multi_dim_points_arr_cpu)
+            self.__multi_dim_points_arr_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.__all_multi_dim_points_arr_cpu,))
 
         if self.__validated_multidim_indices is None:
             return self.__multi_dim_points_arr_gpu
