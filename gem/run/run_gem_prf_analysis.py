@@ -598,70 +598,46 @@ class GEMpRFAnalysis:
       
 
     @classmethod
-    def run(cls, config_filepath = None, spatial_points_xy = None):
-        cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
-        
-        # ...prf spatial points
-        if spatial_points_xy is None:
-            spatial_points_yx = GEMpRFAnalysis.get_prf_spatial_points(cfg) # this will return the spatial points in (row/y, col/x) format
-        
-        # convert spatial points from (row, col) to (col, row)
-        spatial_points_xy = spatial_points_yx
-        spatial_points_xy = spatial_points_yx[:, [1, 0]]
-
-        # selected pRF model
-        selected_prf_model = GEMpRFAnalysis.get_selected_prf_model(cfg)                
-        if selected_prf_model == SelectedPRFModel.GAUSSIAN:             
-            prf_model = PRFGaussianModel(visual_field_radius= float(cfg.search_space["visual_field"])) 
-
-        # additional dimensions
-        additional_dimensions = GEMpRFAnalysis.get_additional_dimensions(cfg, selected_prf_model)
-        prf_space = PRFSpace(spatial_points_xy, additional_dimensions=additional_dimensions)
-        prf_space.convert_spatial_to_multidim()
-        prf_space.keep_validated_sampling_points(prf_model.get_validated_sampling_points_indices) # update the computed multi-dimensional points array
-
+    def run(cls, cfg, prf_model, prf_space):
         # Run the analysis (Concatenation or Individual Run)
         if cfg.bids['@enable'] == "True" and cfg.bids['concatenated']['enable'].lower() == "true":                
             GEMpRFAnalysis.concatenated_run(cfg, prf_model, prf_space)
         else:
             GEMpRFAnalysis.individual_run(cfg, prf_model, prf_space)        
 
-        # copy the config file to the results folder
-        config_filename = os.path.basename(config_filepath)
-        shutil.copy(config_filepath, os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids.get("results_anaylsis_id")}' , config_filename))
-
         return 0
 
 
-################################################---------------------------------MAIN---------------------------------################################################
-# run the main function
-if __name__ == "__main__":    
-    start_time = datetime.datetime.now()
+# # ################################################---------------------------------MAIN---------------------------------################################################
+# # # run the main function
+# # if __name__ == "__main__":    
+# #     start_time = datetime.datetime.now()
 
-    print ("Running the GEM pRF Analysis...")
-    # from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
-    # GEMpRFAnalysis.run()    
-    # cProfile.run('GEMpRFAnalysis.run()', sort='cumulative')
+# #     print ("Running the GEM pRF Analysis...")
+# #     # from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
+# #     # GEMpRFAnalysis.run()    
+# #     # cProfile.run('GEMpRFAnalysis.run()', sort='cumulative')
 
-    # Run the profiling
-    # profiler = cProfile.Profile()
-    # profiler.enable()
+# #     # Run the profiling
+# #     # profiler = cProfile.Profile()
+# #     # profiler.enable()
 
-    config_filepath = os.path.join(os.path.dirname(__file__), '..', 'configs', 'analysis_configs', 'analysis_config.xml')
+# #     config_filepath = os.path.join(os.path.dirname(__file__), '..', 'configs', 'analysis_configs', 'analysis_config.xml')
 
-    # config_filepath = r'D:\code\sid-git\fmri\gem\configs\default_config\new_concatenationDummyTest_config.xml'
-    # GEMpRFAnalysis.concatenated_run(config_filepath)
-    GEMpRFAnalysis.run(config_filepath)
-    # profiler.disable()
+# #     # config_filepath = r'D:\code\sid-git\fmri\gem\configs\default_config\new_concatenationDummyTest_config.xml'
+# #     # GEMpRFAnalysis.concatenated_run(config_filepath)
+# #     print("Starting GEM analysis...")
+# #     GEMpRFAnalysis.run(config_filepath)
+# #     # profiler.disable()
 
-    # print time taken
-    print(f"Complete Time taken: {datetime.datetime.now() - start_time}")
+# #     # print time taken
+# #     print(f"Complete Time taken: {datetime.datetime.now() - start_time}")
 
-    # # Specify the file name to save the profiling results
-    # output_file = '/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paper-simulated-data/analysis/05/BIDS/derivatives/prfanalyze-gem/analysis-05/sub-100000/ses-0n0/profiling_results.txt'
+# #     # # Specify the file name to save the profiling results
+# #     # output_file = '/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paper-simulated-data/analysis/05/BIDS/derivatives/prfanalyze-gem/analysis-05/sub-100000/ses-0n0/profiling_results.txt'
 
-    # # Dump the profiling statistics to the specified file
-    # with open(output_file, 'w') as f:
-    #     stats = pstats.Stats(profiler, stream=f)
-    #     stats.sort_stats('cumulative')
-    #     stats.print_stats()
+# #     # # Dump the profiling statistics to the specified file
+# #     # with open(output_file, 'w') as f:
+# #     #     stats = pstats.Stats(profiler, stream=f)
+# #     #     stats.sort_stats('cumulative')
+# #     #     stats.print_stats()
