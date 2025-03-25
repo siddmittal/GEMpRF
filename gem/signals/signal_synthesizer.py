@@ -187,6 +187,7 @@ class SignalSynthesizer:
                     raise ValueError(f"Not enough GPU memory available on device-{selected_gpu_id}.\nAvailable (Gigabytes) = {available_bytes / (1024 ** 3)}, Required (Gigabytes) = {(per_signal_and_model_curve_required_mem_gb * 1.2) / (1024 ** 3)}.\nGEM-pRF cannot compute further model signals !!!")
                 
                 selected_gpu_possible_signals_chunk_size = per_gpu_assigned_batch_size if per_gpu_assigned_batch_size <= possible_batch_size else possible_batch_size 
+                selected_gpu_possible_signals_chunk_size = min(15000, selected_gpu_possible_signals_chunk_size) # Dirty fix, to avoid illegal memory access error, if the selected_gpu_possible_signals_chunk_size is too large
                 if selected_gpu_possible_signals_chunk_size < 1 and num_gpus == 1:
                     selected_gpu_possible_signals_chunk_size = 1
                 
@@ -215,7 +216,11 @@ class SignalSynthesizer:
                         num_dimension=prf_model.num_dimensions)
                     
                     # update to batch
-                    signal_rowmajor_batch_current_gpu[signals_in_chunk_indices, :] = chunk_signal_rowmajor_batch_gpu                                
+                    try:
+                        signal_rowmajor_batch_current_gpu[signals_in_chunk_indices, :] = chunk_signal_rowmajor_batch_gpu
+                    except Exception as e:
+                        print(f"{str(e)}.\nTry to reduce chunk size per GPU or contact the author siddharth.mittal@meduniwien.ac.at")
+                        raise e
 
                 result_batches.append(signal_rowmajor_batch_current_gpu)
                 num_signals_computed += len(signal_rowmajor_batch_current_gpu)
