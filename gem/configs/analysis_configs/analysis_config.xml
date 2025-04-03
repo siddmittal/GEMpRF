@@ -21,6 +21,7 @@
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
+    <binarization enable="True"/>
   </stimulus>
 
   <!-- Input Data -->

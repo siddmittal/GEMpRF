@@ -5,15 +5,20 @@ import nibabel as nib
 from scipy.ndimage import zoom
 import os
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
+from gem.utils.logger import Logger
 
 class Stimulus:
-    def __init__(self, relative_file_path, size_in_degrees, stim_config):
+    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize):
         # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
         script_directory = os.path.dirname(os.path.abspath(__file__))
         stimulus_file_path = os.path.join(script_directory, relative_file_path)
         stimulus_img = nib.load(stimulus_file_path)
         self.size_in_degrees = size_in_degrees
         self.org_data = (stimulus_img.get_fdata()).squeeze()
+        if binarize:
+            if not np.all(np.isin(self.org_data, [0, 1])):  
+                Logger.print_yellow_message("Warning: Stimulus data contains values other than 0 and 1. Binarizing...", print_file_name=False)
+                self.org_data = (self.org_data > 0).astype(np.uint8)  # Convert to 0s and 1s
         self.resampled_data = None
         self.__resampled_hrf_convolved_data = None
         self.__flattened_columnmajor_stimulus_data_gpu = None

@@ -67,12 +67,13 @@ class GEMpRFAnalysis:
     def load_stimulus(cls, cfg, stimulus_info : StimulusFileInfo = None)-> Stimulus:
         # ...stimulus
         stim_width = int(cfg.stimulus["width"])
-        stim_height = int(cfg.stimulus["height"])        
+        stim_height = int(cfg.stimulus["height"])  
+        binarize = True if cfg.stimulus["binarization"].get("@enable") == "True" else False
 
         if stimulus_info is not None:
-            stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus)
+            stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize)
         else:
-            stimulus = Stimulus(cfg.stimulus["filepath"], size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus)
+            stimulus = Stimulus(cfg.stimulus["filepath"], size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize)
         
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
         stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=cls.hrf_curve)
