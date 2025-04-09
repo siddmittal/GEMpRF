@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 import shutil
 from enum import Enum
+import pynvml
 import cProfile
 import pstats
 import io
@@ -56,7 +57,10 @@ def run_selected_program(selected_program, config_filepath, spatial_points_xy = 
     cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
 
     # GPUs management
-    max_available_gpus = 4 #cp.cuda.runtime.getDeviceCount()
+    #...get max. number of available GPUs without using cuda
+    pynvml.nvmlInit()
+    max_available_gpus = pynvml.nvmlDeviceGetCount() #cp.cuda.runtime.getDeviceCount()
+    pynvml.nvmlShutdown()
     try:
         manage_gpus(cfg, max_available_gpus)
     except ValueError as e:
