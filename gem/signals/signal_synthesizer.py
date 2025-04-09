@@ -8,6 +8,7 @@
 "@Desc    :   None",     
 """
 
+import os
 from typing import List
 import numpy as np
 import cupy as cp
@@ -119,18 +120,8 @@ class SignalSynthesizer:
     @classmethod 
     def get_available_gpus(cls, total_model_signals, cfg):
         if( total_model_signals > 1) & (gpu_utils.get_number_of_gpus() > 1):
-            # check if user has specified the additional GPUs to be used (ADDITONAL available GPUs details: we consider that the default GPU (0) is already available)
-            # ...if not, then we will use all the available GPUs
-            if cfg.gpu["additional_available_gpus"] is None: # in this case, we use only the default defined GPU
-                num_gpus = 1
-                available_gpus = [ggm.get_instance().default_gpu_id]
-            # ...if yes, then we will use the user defined GPUs
-            else:       
-                additional_available_gpus = list(map(int, cfg.gpu["additional_available_gpus"]['gpu']))  # [1, 3]     
-                available_gpus = additional_available_gpus 
-                available_gpus.insert(0, ggm.get_instance().default_gpu_id) # adding the default GPU to the list          
-                available_gpus = np.unique(np.array(available_gpus)) # [0, 1, 3]         
-                num_gpus = len(available_gpus)
+            available_gpus = list(map(int, os.environ["CUDA_VISIBLE_DEVICES"].split(',')))
+            num_gpus = len(available_gpus)
         else:
             # we don't need to use multiple GPUs for a single signal
             num_gpus = 1
@@ -174,7 +165,7 @@ class SignalSynthesizer:
         for gpu_idx in range(num_gpus):
             signal_rowmajor_batch_current_gpu = None              
 
-            selected_gpu_id = available_gpus[gpu_idx]
+            selected_gpu_id = gpu_idx #available_gpus[gpu_idx]
             with cp.cuda.Device(selected_gpu_id):  
                 # get stimulus data on the selected GPU
                 stimulus_data, stimulus_x_range, stimulus_y_range = SignalSynthesizer.get_stimulus_data_on_selected_gpu(stimulus = stimulus, selected_device_id = selected_gpu_id)                    

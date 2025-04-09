@@ -23,14 +23,46 @@ from gem.space.PRFSpace import PRFSpace
 from gem.model.selected_prf_model import SelectedPRFModel
 from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
+from gem.utils.logger import Logger
 
 class SelectedProgram(Enum):
     GEMAnalysis = 0
     GEMSimulations = 1
 
+def set_system_gpus(max_available_gpus):
+    all_gpus_list = list(range(max_available_gpus))
+    all_gpus_str = ','.join(map(str, all_gpus_list))
+    os.environ["CUDA_VISIBLE_DEVICES"] = all_gpus_str
+
+def manage_gpus(cfg, max_available_gpus):    
+    try:
+        custom_default_gpu_id = int(cfg.gpu.get("default_gpu"))
+        additional_gpus = cfg.gpu["additional_available_gpus"]['gpu']
+        other_available_gpus = sorted(set(int(gpu_id) for gpu_id in additional_gpus if int(gpu_id) != custom_default_gpu_id))        
+    except (ValueError) as e:
+        raise ValueError("All GPU IDs must be integers.")
+
+    user_specified_gpus_list = [custom_default_gpu_id] + other_available_gpus
+
+    # Ensure all specified GPU IDs are within available range
+    if not all(0 <= gpu_id < max_available_gpus for gpu_id in user_specified_gpus_list):
+        raise ValueError(f"GPU IDs must be less than the number of available GPUs ({max_available_gpus}).")
+
+    all_gpus_str = ','.join(map(str, user_specified_gpus_list))
+    os.environ["CUDA_VISIBLE_DEVICES"] = all_gpus_str
+
+
 def run_selected_program(selected_program, config_filepath, spatial_points_xy = None):
     cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
-    _ = ggm(default_gpu_id = int(cfg.gpu['default_gpu']))
+
+    # GPUs management
+    max_available_gpus = 4 #cp.cuda.runtime.getDeviceCount()
+    try:
+        manage_gpus(cfg, max_available_gpus)
+    except ValueError as e:
+        Logger.print_red_message(f"GPU config error: {e} Utilizing all available GPUs...", print_file_name=False)
+        set_system_gpus(max_available_gpus)
+    _ = ggm(default_gpu_id = 0) # Here "0" reresents the index in "os.environ["CUDA_VISIBLE_DEVICES"]", which will automatically be the correct one
 
     # copy the config file to the results folder
     if selected_program == SelectedProgram.GEMAnalysis:
