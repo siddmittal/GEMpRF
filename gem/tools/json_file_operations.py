@@ -22,14 +22,14 @@ class JsonMgr:
 
 
     @classmethod
-    def args2jsonEntry(cls, muX, muY, sigma, r2, signal):
+    def args2jsonEntry(cls, muX, muY, sigma, r2, signal):        
         json_entry = {
-                    "Centerx0": muX,
-                    "Centery0": muY,
+                    "Centerx0": round(float(muX), 4),
+                    "Centery0": round(float(muY), 4),
                     "Theta": 0,
-                    "sigmaMajor": sigma,
+                    "sigmaMajor": round(float(sigma), 4),
                     "sigmaMinor": 0,
-                    "R2": r2,
+                    "R2": round(float(r2), 4),
                     "modelpred": signal.tolist()
                 }
         return json_entry
