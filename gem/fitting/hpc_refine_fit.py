@@ -45,7 +45,9 @@ class RefineFit:
             if type(e_full) is cp.ndarray:
                 default_gpu_id = ggm.get_instance().default_gpu_id
                 with cp.cuda.Device(default_gpu_id):
-                    e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2      
+                    e_vec = e_full[y_idx, block_flat_indices] # NOTE: ** 2 is required if we are taking error term as (yts)^2    
+            else:
+                e_vec = e_full[y_idx, block_flat_indices]  
             if len(e_vec) == 1: # i.e. no other neighbours
                 vec = e_vec.squeeze()
             else:              
