@@ -66,6 +66,10 @@ class Stimulus:
         resampled_stimulus_shape[2] / (original_stimulus_shape[2]), # 1  # Keep the number of time points unchanged        
         )   
         self.resampled_data = zoom(self.org_data.squeeze(), resampling_factors, order=1)
+        
+        # # To use High Resolution Stimulus
+        # self.resampled_data = self.org_data
+
     
     def compute_hrf_convolved_stimulus_data(self, hrf_curve):  
         stimulus_location_convolved_timecourses = np.empty_like(self.resampled_data, dtype=float)
