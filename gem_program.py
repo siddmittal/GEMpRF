@@ -100,9 +100,32 @@ def run_selected_program(selected_program, config_filepath, spatial_points_xy = 
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
         
 
+def wm():
+    Logger.print_red_message("""
+        ============================================================
+        GEM pRF Analysis - Unreleased Version for Testing Only
+        ============================================================
+
+        @Author   : Siddharth Mittal
+        @Version  : 1.0
+        @Contact  : siddharth.mittal@meduniwien.ac.at
+        @License  : (C) Copyright 2024, Medical University of Vienna
+
+        WARNING:
+        This is an unreleased version for testing purposes.
+        Its distribution is strictly prohibited.
+
+        ============================================================
+    """, 
+    print_file_name=False)
+
+
+
 ################################################---------------------------------MAIN---------------------------------################################################
 # run the main function
-if __name__ == "__main__":            
+def run():      
+    wm()
+          
     # NOTE: Select the program to run
     # selected_program = SelectedProgram.GEMAnalysis
     selected_program = SelectedProgram.GEMAnalysis
@@ -149,3 +172,7 @@ if __name__ == "__main__":
     #     stats = pstats.Stats(profiler, stream=f)
     #     stats.sort_stats('cumulative')
     #     stats.print_stats()
+
+if __name__ == "__main__":
+    run()
+    
