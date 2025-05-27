@@ -12,6 +12,8 @@ import os
 import cupy as cp
 import numpy as np
 from typing import List
+import subprocess
+
 
 class HpcUtils:
     usage_label = None  # Class attribute to hold the label widget
@@ -47,22 +49,44 @@ class HpcUtils:
         kernel = cp.RawKernel(kernel_code, kernel_name)
 
         return kernel
-    
+
+    # Compile CUDA .CU to PTX
+    @classmethod
+    def compile_cuda_to_ptx(cls, cu_file, output_ptx):
+        try:
+            subprocess.run(
+                ['nvcc', '-ptx', cu_file, '-o', output_ptx],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+        except subprocess.CalledProcessError as e:
+            print("Compilation of .cu to .ptx failed:")
+            print(e.stderr)
+
     # Get RAW Module
     @classmethod
-    def get_raw_module(cls, module_filename):
+    def get_raw_module(cls, module_filename_without_ext):
         # Get the path of the current script
         script_dir = os.path.dirname(os.path.realpath(__file__))
+        gpu_kernels_dir = os.path.join(script_dir, "..", 'kernels')
 
         # Construct the path to the CUDA kernel file
-        kernel_file_path = os.path.join(script_dir, ".." ,'kernels', module_filename)
+        kernel_file_path = os.path.join(gpu_kernels_dir, f"{module_filename_without_ext}.cu")
 
-        # Load the CUDA kernel file
-        with open(kernel_file_path, 'r') as kernel_file:
-            module_code = kernel_file.read()
+        # check if the .ptx file already exists, generate one if not
+        ptx_file_path = os.path.join(gpu_kernels_dir, f"{module_filename_without_ext}.ptx")
+        if not os.path.exists(ptx_file_path):
+            cls.compile_cuda_to_ptx(kernel_file_path, ptx_file_path)
 
-        # Compile the kernel code using CuPy
-        raw_module = cp.RawModule(code=module_code)
+        # # # Load the CUDA kernel file
+        # # with open(kernel_file_path, 'r') as kernel_file:
+        # #     module_code = kernel_file.read()
+
+        # # Compile the kernel code using CuPy
+        # # raw_module = cp.RawModule(code=module_code)
+        raw_module = cp.RawModule(path=ptx_file_path)
 
         return raw_module
 

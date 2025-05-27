@@ -32,7 +32,7 @@ class PRFGaussianModel(PRFModel):
         self.__num_dimensions = 3
         self.model_signals_batches = None
         self.derivative_signals_batches = None
-        self.__cuda_module = gpu_utils.get_raw_module('gaussian_kernel.cu')
+        self.__cuda_module = gpu_utils.get_raw_module('gaussian_kernel')
         self.__gc_kernel = self.__cuda_module.get_function("gc_using_args_arrays_cuda_Kernel")
         self._derivative_kernels_list = [self.__cuda_module.get_function("dgc_dx_using_args_arrays_cuda_Kernel"), 
                                          self.__cuda_module.get_function("dgc_dy_using_args_arrays_cuda_Kernel"), 
