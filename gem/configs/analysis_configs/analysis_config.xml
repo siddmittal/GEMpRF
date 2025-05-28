@@ -17,23 +17,22 @@
   <!-- Stimulus data -->
   <stimulus>
     <!-- File path for stimulus -->
-    <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli/task-bar_apertures.nii.gz</filepath>      
+    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>         
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
-    <binarization enable="True"/>
+    <binarization enable="False" threshold="0"/> <!-- stimulus will be binarized if enabled, all values above threshold will be set to 1 and below to 0 -->	
   </stimulus>
 
   <!-- Input Data -->
   <input_datasrc>    
-    <!-- either spcify the BIDS info and set enable=True -->  
-    <BIDS enable="True"> <!-- Flag to indicate BIDS format -->
+    <BIDS enable="True" run_type="concatenated"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
       <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS</basepath>
       <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- specify if the "analysis-xx"  -->          
       <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
 
-      <!-- analysis id to save the results -->
-      <results_anaylsis_id>14_Grid-51x51x16_[for paper]</results_anaylsis_id>
+      <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
+      <results_anaylsis_id overwrite="False">24_TestAnalaysisResults</results_anaylsis_id>
             
       <!-- 
         NOTE: Case sensitive, provide the exact values!!!
@@ -45,29 +44,25 @@
       <sub>001</sub>
       <hemi>all</hemi>
 
-      <!--INDIVIDUAL Analysis-->
+      <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
-        <ses>001nn</ses>
-        <task>bar</task>
-        <run>01</run>
+        <ses>001nn</ses> <!-- comma separated values or specify "all" -->
+        <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->
+        <run>01</run> <!-- comma separated values or specify "all" -->
       </individual>
 
       <!--CONCATENATED Analysis-->
       <concatenated>
-        <enable>False</enable>
-        <!--<combination>ses-001_task-bar_run-01</combination>
-        <combination>ses-001_task-bar_run-02</combination>-->
         <concatenate_item>
-          <ses>001</ses>
-          <task>bar</task>
-          <run>02</run>
+          <ses>001</ses> <!-- ONLY one value is allowed-->
+          <task>bar</task> <!-- ONLY one value is allowed-->
+          <run>02</run> <!-- ONLY one value is allowed-->
         </concatenate_item>
         <concatenate_item>
           <ses>001</ses>
           <task>bar</task>
           <run>04</run>
         </concatenate_item>
-
       </concatenated>       
     </BIDS>
 
@@ -118,48 +113,4 @@
     <max_sigma>5</max_sigma>
     <nSigma>8</nSigma>
   </search_space>
-
-  <!-- Test space information -->
-  <test_space>
-    <nRows>11</nRows>
-    <nCols>11</nCols>
-    <min_sigma>0.5</min_sigma>
-    <max_sigma>4</max_sigma>
-    <nSigma>1</nSigma>
-  </test_space>
-
-  <!-- Concatenated runs information -->
-  <concatenated_runs>
-    <enable>False</enable>
-    <num_runs>2</num_runs>
-    <height>101</height>
-    <batches>4</batches>
-    
-    <!-- BIDS run information -->
-    <bids_runs>
-      <run>01</run>
-      <run>02</run>
-    </bids_runs>
-    <!-- BIDS task information -->
-    <bids_tasks>
-      <task>bar</task>
-      <task>ring</task>
-    </bids_tasks>
-    <!-- Stimulus file paths -->
-    <stimulus>
-      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
-      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/stimuli/task-bar_apertures.nii.gz</filepath>
-    </stimulus>
-    <!-- Measured data file paths -->
-    <measured_data>
-      <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim23/derivatives/prfprepare/analysis-03/sub-sidtest/ses-001/func/sub-sidtest_ses-001_task-bar_run-01_hemi-L_bold.nii.gz</filepath>
-    </measured_data>
-  </concatenated_runs>
-
-  <!-- Noise information -->
-  <noise>    
-    <level>0.1</level>    
-    <model>gaussian</model>    
-    <synthesis_ratio>1</synthesis_ratio> <!-- number of noisy signals per pRF location -->
-  </noise>
 </root>
