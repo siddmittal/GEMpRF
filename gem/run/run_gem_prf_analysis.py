@@ -69,12 +69,10 @@ class GEMpRFAnalysis:
         stim_width = int(cfg.stimulus["width"])
         stim_height = int(cfg.stimulus["height"])  
         binarize = True if cfg.stimulus["binarization"].get("@enable") == "True" else False
+        binarize_threshold = float(cfg.stimulus["binarization"].get("@threshold"))
 
-        if stimulus_info is not None:
-            stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize)
-        else:
-            stimulus = Stimulus(cfg.stimulus["filepath"], size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize)
-        
+        stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize, binarize_threshold=binarize_threshold)
+
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
         stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=cls.hrf_curve)
 
@@ -138,7 +136,7 @@ class GEMpRFAnalysis:
         # List of input measured data filepaths
         measured_data_list = None
         if cfg.bids['@enable'] == "True":
-            measured_data_info_list = GemBidsHandler.get_input_filepaths(cfg.bids)
+            measured_data_info_list = GemBidsHandler.get_input_filepaths(bids_config=cfg.bids, stimuli_dir_path= cfg.stimulus['directory'])
             measured_data_list = [data[0] for data in measured_data_info_list]        
         else:
             measured_data_list = cfg.fixed_paths['measured_data_filepath']['filepath']
@@ -167,7 +165,7 @@ class GEMpRFAnalysis:
     def get_concatenated_runs_data_files_info(cls, cfg):
         # List of input measured data filepaths
         if cfg.bids['@enable'] == "True":
-            measured_data_info_list = GemBidsHandler.get_input_filepaths(cfg.bids)
+            measured_data_info_list = GemBidsHandler.get_input_filepaths(bids_config=cfg.bids, stimuli_dir_path= cfg.stimulus['directory'])
         else:
             raise ValueError("Invalid Configuration: Concatenation runs are only supported for BIDS data")
             
@@ -529,7 +527,8 @@ class GEMpRFAnalysis:
             return
 
         # stimulus
-        stimulus = GEMpRFAnalysis.load_stimulus(cfg)
+        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
+        stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
 
         # M-Matrix
         if cfg.refine_fitting_enabled:
@@ -607,7 +606,7 @@ class GEMpRFAnalysis:
     @classmethod
     def run(cls, cfg, prf_model, prf_space):
         # Run the analysis (Concatenation or Individual Run)
-        if cfg.bids['@enable'] == "True" and cfg.bids['concatenated']['enable'].lower() == "true":                
+        if cfg.bids['@enable'] == "True" and cfg.bids['@run_type'].lower() == "concatenated":                
             GEMpRFAnalysis.concatenated_run(cfg, prf_model, prf_space)
         else:
             GEMpRFAnalysis.individual_run(cfg, prf_model, prf_space)        

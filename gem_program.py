@@ -17,6 +17,7 @@ import pynvml
 import cProfile
 import pstats
 import io
+import datetime
 
 # gem imports
 from gem.model.prf_gaussian_model import PRFGaussianModel
@@ -68,9 +69,11 @@ def run_selected_program(selected_program, config_filepath, spatial_points_xy = 
         set_system_gpus(max_available_gpus)
     _ = ggm(default_gpu_id = 0) # Here "0" reresents the index in "os.environ["CUDA_VISIBLE_DEVICES"]", which will automatically be the correct one
 
-    # copy the config file to the results folder
+    # copy the config file to the results folder, decide to overwrite or not the existing analysis results diretory
     if selected_program == SelectedProgram.GEMAnalysis:
-        result_dir = os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids.get("results_anaylsis_id")}')
+        result_dir = os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids["results_anaylsis_id"]["#text"]}')
+        if os.path.exists(result_dir) and cfg.bids["results_anaylsis_id"].get("@overwrite").lower() == "false":
+            shutil.move(result_dir, f'{result_dir}_backup-{datetime.datetime.now():%Y%m%d-%H%M%S}')
         shutil.copy(config_filepath, result_dir) if os.makedirs(result_dir, exist_ok=True) is None else None
 
     # ...prf spatial points
@@ -156,7 +159,8 @@ def run():
             pass
         elif selected_program == SelectedProgram.GEMAnalysis:
             # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config - VerifyChanges.xml')
-            config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config_retcomp17BIDS_wedgeLR-VerfiyDefaultGPU.xml')
+            # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config_retcomp17BIDS_wedgeLR-VerfiyDefaultGPU.xml')
+            config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config.xml')
         
     # GEMSimulationsRunner.run(config_filepath, isSimulation=IS_SIMULATION)
     run_selected_program(selected_program, config_filepath)

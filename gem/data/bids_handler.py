@@ -38,15 +38,16 @@ class GemBidsHandler:
                     return found_value
         
     @classmethod    
-    def __get_matching_files(cls, base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, json_item, is_individual_run):
-        if is_individual_run: # in case of individual runs, the user may specify the multiple session/run/task values and therefore it could be a list
+    def __get_matching_files(cls, base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, json_item, stimuli_dir_path, is_individual_run):
+        if is_individual_run: # in case of individual runs, the user may specify the multiple session/run values (but only one task) and therefore it could be a list
             ses_list = [element.strip() for element in json_item.get("ses").split(',')]
             run_list = [element.strip() for element in json_item.get("run").split(',')]        
-            task_list = [element.strip() for element in json_item.get("task").split(',')]        
-        else: # for concaenated run, only one session/run/task uis allowed for each "concatenate_item" item
+            # # task_list = [element.strip() for element in json_item.get("task").split(',')]        
+        else: # for concaenated run, only one session/run/task is allowed for each "concatenate_item" item
             ses_list = [json_item.get("ses").strip()]
             run_list = [json_item.get("run").strip()]        
-            task_list = [json_item.get("task").strip()]        
+            
+        task_list = [json_item.get("task").strip()]        
 
 
         if append_to_basepath_list:
@@ -68,14 +69,6 @@ class GemBidsHandler:
                     for sub_dir in sub_dirs:
                         sub_path = os.path.join(sub_dir_root, sub_dir)
                         
-                        # stimuli files for this subject
-                        stimuli_dir_root, dirs_in_subject_folder, _ = next(os.walk(sub_path))
-                        dirs_in_subject_folder[:] = [d for d in dirs_in_subject_folder if d.startswith(('stimuli'))]      
-                        stimuli_dir_name = dirs_in_subject_folder[0] # there should be only one stimuli directory for each subject
-                        stimuli_dir_path = os.path.join(stimuli_dir_root, stimuli_dir_name)
-                        files = os.listdir(stimuli_dir_path)
-                        available_stimuli_files = [i for i in files if i.endswith('.nii.gz')]
-
                         # sessions for this subject
                         for ses_dir_root, _, _ in os.walk(sub_path):
                             ses_dirs = next(os.walk(ses_dir_root))[1]
@@ -114,20 +107,24 @@ class GemBidsHandler:
 
                                                     if ('all' in sub_list or sub_part in sub_list):
                                                         if ('all' in ses_list or ses_part in ses_list):
-                                                            if ('all' in task_list or task_part in task_list):
+                                                            # # if ('all' in task_list or task_part in task_list):
+                                                            if (task_part in task_list):
                                                                 if ('all' in run_list or run_part in run_list):
                                                                     if ('all' in hemi_list or hemi_part in hemi_list):
-                                                                        # before appending this file, get the stimulus file info as well
-                                                                        stimulus_for_this_task =  [stimulus_file for stimulus_file in available_stimuli_files if task_part == cls.extract_value_from_bids_string(bids_format_string = stimulus_file, key = 'task')]                                                                        
-                                                                        stimulus_info = cls.__get_stimulus_file_info(stimuli_dir_path, stimulus_for_this_task[0])
-
-                                                                        # matching_files_info.append(tuple((os.path.join(func_dir_root, file), filename_info_dict)))
+                                                                        stimulus_info = cls.get_stimulus_info(stimuli_dir_path, task_part)
                                                                         matching_files_info.append(tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info))) # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
 
         return matching_files_info
 
     @classmethod
-    def get_input_filepaths(self, bids_config : json):
+    def get_stimulus_info(cls, stimulus_dir, stimulus_name):
+        available_stimuli_files = [i for i in os.listdir(stimulus_dir) if i.endswith('.nii.gz')]
+        stimulus_for_this_task =  [stimulus_file for stimulus_file in available_stimuli_files if stimulus_name == cls.extract_value_from_bids_string(bids_format_string = stimulus_file, key = 'task')]                                                                        
+        stimulus_info = cls.__get_stimulus_file_info(stimulus_dir, stimulus_for_this_task[0])   
+        return stimulus_info     
+
+    @classmethod
+    def get_input_filepaths(self, bids_config : json, stimuli_dir_path : str):
         base_path = bids_config.get("basepath")
 
         # common information for both "individual" and "concantenated" analysis
@@ -140,15 +137,15 @@ class GemBidsHandler:
         input_src_files = []
 
         # check if "Individual" or "Concatenated" tasks are specified
-        if bids_config.get("concatenated").get("enable").lower() == "true":
+        if bids_config['@enable'] == "True" and bids_config['@run_type'].lower() == "concatenated":
             concatenate_items_list = bids_config.get("concatenated").get("concatenate_item")
             for concatenate_item in concatenate_items_list:
-                src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, concatenate_item, is_individual_run=False)
+                src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, concatenate_item, stimuli_dir_path, is_individual_run=False)
                 input_src_files.append(src_files)
 
         else:
             individual_item = bids_config.get("individual")
-            input_src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, individual_item, is_individual_run=True)
+            input_src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, individual_item, stimuli_dir_path, is_individual_run=True)
 
         return input_src_files
     
