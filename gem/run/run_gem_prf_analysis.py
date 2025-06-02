@@ -147,7 +147,7 @@ class GEMpRFAnalysis:
         result_filepaths_list = []
         for data_idx in range(len(measured_data_list)):
             if cfg.bids['@enable'] == "True":
-                result_file =  GemBidsHandler.inputpath2resultpath(cfg.bids, measured_data_info_list[data_idx], analysis_id=cfg.bids["results_anaylsis_id"])                
+                result_file =  GemBidsHandler.inputpath2resultpath(cfg.bids, measured_data_info_list[data_idx], analysis_id=cfg.bids["results_anaylsis_id"]["#text"])                
             else:
                 file = os.path.basename(measured_data_list[data_idx])
                 filename = (file.split("."))[0]
@@ -568,6 +568,8 @@ class GEMpRFAnalysis:
         # pRF Estimations                
         file_processed_counter = 1             
         data_src = []             
+        # data_idx = 0  
+        # for i in range(10):
         for data_idx in range(len(measured_data_list)):
             # check if input file exists
             if not os.path.exists(measured_data_list[data_idx]):
@@ -577,6 +579,11 @@ class GEMpRFAnalysis:
             start_time = time.time()
             Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
             valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu = GEMpRFAnalysis.get_pRF_estimations(cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_list[data_idx])
+            # profiler.disable()
+            # stats = pstats.Stats(profiler, stream=profile_stream)
+            # stats.strip_dirs().sort_stats("cumulative").print_stats(20)  # Top 20 most time-consuming calls
+            # print(profile_stream.getvalue())
+
 
             # format results to JSON                
             # json_data = R2.format_in_json_format( r2_results, valid_refined_prf_points_XY, valid_refined_S_cpu)   # NOTE: use this line if you want to print the refined signals in the JSON file
@@ -594,9 +601,11 @@ class GEMpRFAnalysis:
             # end_time = time.time()
             # iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
+            # print(f"Time taken for this iteration: {iteration_time}")
 
-            # # write the time taken for each iteration
-            # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\iteration_times_151x151x16.csv"
+            # write the time taken for each iteration
+            # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\v2_iteration_times_151x151x16.csv"
+            # csv_filepath = r"/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paper-simulated-data/analysis/05/BIDS/derivatives/time_records/v2_iteration_times_151x151x16--RefinefitScipy.csv"
             # df = pd.DataFrame({'DataSrc': data_src, 'Time (seconds)': iteration_times})
             # df.to_csv(csv_filepath, index=False)
         print ("All files processed...")
