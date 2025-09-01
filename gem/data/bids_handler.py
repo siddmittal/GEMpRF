@@ -194,7 +194,7 @@ class GemBidsHandler:
         concatenated_result_filename = GemBidsHandler.update_filename(filename_without_extension, concatenation_result_info)
 
         base_path = bids_config.get("basepath")
-        results_anaylsis_id = bids_config.getbids_config["results_anaylsis_id"]["#text"]
+        results_anaylsis_id = bids_config["results_anaylsis_id"]["#text"]
 
         sub = concatenation_result_info['sub']
         ses = concatenation_result_info['ses']        
