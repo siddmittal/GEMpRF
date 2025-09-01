@@ -53,8 +53,7 @@ class GEMpRFAnalysis:
     # HRF Curve
     hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
     # hrf_curve = spm_hrf_compat(hrf_t)
-    # hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values
-    hrf_curve = np.array([0,0.0019,0.0398,0.1485,0.2728,0.3367,0.3164,0.235,0.1312,0.0363,-0.0328,-0.0723,-0.0866,-0.0836,-0.0713,-0.0557,-0.0407,-0.0281,-0.0186,-0.0118,-0.0072,-0.0043,-0.0025,-0.0014,-0.0008,-0.0004,-0.0002,-0.0001,-0.0001,-0.00003,-0.00001,-0.00001,-0.00001,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]) # mrVista Values
+    hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
     __selected_prf_model = SelectedPRFModel.NoneType
 
     @classmethod
@@ -90,11 +89,7 @@ class GEMpRFAnalysis:
     @classmethod
     def get_additional_dimensions(cls, cfg, selected_prf_model : SelectedPRFModel):
         if selected_prf_model == SelectedPRFModel.GAUSSIAN:
-            # search_space_sigma_range = np.linspace(float(cfg.search_space["min_sigma"]), float(cfg.search_space["max_sigma"]), int(cfg.search_space["nSigma"])) # 0.5 to 1.5
-            # search_space_sigma_range = np.array([0.20, 0.40, 0.61, 0.81, 1.02, 1.23, 1.43, 1.64, 1.85, 2.05, 2.26, 2.46, 2.67, 2.88, 3.08, 3.29, 3.50, 4.06, 4.72, 5.48, 6.37, 7.40, 8.60, 10.00]) # validation framework mrVista Sigma values
-            # search_space_sigma_range = np.array([0.2000, 0.4062, 0.6125, 0.8188, 1.0250, 1.2313, 1.4375, 1.6437, 1.8500, 2.0563, 2.2625, 2.4688, 2.6750, 2.8812, 3.0875, 3.2938, 3.5000, 4.0056, 4.5842, 5.2463, 6.0042, 6.8715, 7.8640, 9.0000]) # empirical analysis mrVista Sigma values for STIMSIM24
-            search_space_sigma_range = np.array([0.2000, 0.4062, 0.6125, 0.8188, 1.0250, 1.2313, 1.4375, 1.6437, 1.8500, 2.0563, 2.2625, 2.4688, 2.6750, 2.8812, 3.0875, 3.2938, 3.5000, 4.1932, 5.0237, 6.0187, 7.2108, 8.6390, 10.3501, 12.4000]) # empirical analysis mrVista Sigma values for NYU
-            #search_space_sigma_range = np.array([0.3031, 0.5094, 0.7156, 0.9219, 1.1281, 1.3344, 1.5406, 1.7469, 1.9531, 2.1594, 2.3656, 2.5719, 2.7781, 2.9844, 3.1906, 3.3969, 3.7528, 4.2949, 4.9153, 5.6253, 6.4379, 7.3678, 8.4320]) # for simukated data generation, mrVista Sigma values inbetween points
+            search_space_sigma_range = np.linspace(float(cfg.search_space["min_sigma"]), float(cfg.search_space["max_sigma"]), int(cfg.search_space["nSigma"])) # 0.5 to 1.5
             additional_dimensions = PRFSpace.make_extra_dimensions(search_space_sigma_range)
         else:
             raise ValueError("Invalid PRF Model")
@@ -120,24 +115,6 @@ class GEMpRFAnalysis:
     def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
         # model signals
         S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
-
-        # NOTE NOTE NOTE: Saving model signals for debugging
-        if False:
-            multi_dim_points_to_be_saved = prf_space.multi_dim_points_cpu
-            timecourses_to_be_saved = cp.asnumpy(S_batches[0])
-            filepath = "/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfanalyze-gem/ModelSignalsForDebugging/v3_debug_data_noisefree_model_signals.h5"
-            import h5py
-            import nibabel as nib
-            with h5py.File(filepath, "w") as f:
-                f.create_dataset("multi_dim_points", data=multi_dim_points_to_be_saved)
-                f.create_dataset("timecourses", data=timecourses_to_be_saved)
-            # also save the timecourses in a nifti file so that we can analyse by mrVista and GEM directly
-            ref_nifti_path = "/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-DummyData/ses-NoiseFreeSignals/func/sub-001_ses-001_task-bar_run-01_hemi-L_bold.nii.gz"
-            ref_img = nib.load(ref_nifti_path)
-            output_path = "/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-DummyData/ses-NoiseFreeSignalsFirstQuadrant/func/sub-DummyData_ses-NoiseFreeSignalsFirstQuadrant_task-bar_run-01_hemi-L_bold.nii.gz"
-            data = timecourses_to_be_saved[:, np.newaxis, np.newaxis, :]
-            img = nib.Nifti2Image(data, affine=ref_img.affine, header=ref_img.header)
-            nib.save(img, output_path)
 
         # model derivatives signals
         dS_dtheta_batches_list = []
