@@ -146,53 +146,53 @@ class R2:
             return cp.asnumpy(r2_results_gpu)   
 
     @classmethod # R2 numerator = (yty - e - yt_RRt_y)    
-    def get_r2_numerator_denominator_terms(cls, Y_signals_gpu, O_gpu, refined_matching_results, refined_signals_cpu : np.ndarray): 
+    def get_r2_numerator_denominator_terms(cls, Y_signals_gpu, O_gpu, refined_matching_results, refined_signals_cpu: np.ndarray): 
         with cp.cuda.Device(ggm.get_instance().default_gpu_id):
-            refined_signals_gpu = cp.asarray(refined_signals_cpu) 
-            num_y_signals = len(refined_matching_results)
-            r2_numerator_results_gpu = cp.zeros(num_y_signals, dtype=float)
-            r2_denominator_results_gpu = cp.zeros(num_y_signals, dtype=float)
+            refined_signals_gpu = cp.asarray(refined_signals_cpu)
+            num_y_signals = Y_signals_gpu.shape[1]
 
             R_Rt_gpu = cp.eye(O_gpu.shape[0]) - O_gpu
 
-            # # # compute signals for the refined paramerters
-            # # refined_prf_multi_dim_points_gpu = cp.array(refined_matching_results)
-            # # refined_S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_gpu=refined_prf_multi_dim_points_gpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE)            
-            # # refined_signals_rowmajor_gpu = refined_S_batches[0]
+            # Compute yty for each signal
+            yty = cp.sum(Y_signals_gpu ** 2, axis=0)
 
+            # Compute ystar and ystarT_ystar
+            ystar = O_gpu @ Y_signals_gpu
+            ystarT_ystar = cp.sum(ystar ** 2, axis=0)
 
-            num_y_signals = len(refined_matching_results)
-            for yIdx in range (num_y_signals):
-                y = Y_signals_gpu[:, yIdx]
-                yty = y.T @ y
-                ystar = O_gpu @ y
-                # ystarT_ystar_inv = (ystar.T @ ystar) ** (-1)
-                ystarT_ystar = (ystar.T @ ystar)
+            # Check for NaN refined results
+            nan_mask = np.isnan(refined_matching_results).all(axis=1)
+            nan_mask = cp.asarray(nan_mask)
 
-                if all(np.isnan(refined_matching_results[yIdx])): # sometimes the y-signal itself is completely zero and in those scenerio, we set the refined parameters as (nan, nan, nan) in the refinement step
-                    # r2 = -1
-                    num = 2
-                    den = 1
-                else:
-                    # compute error-term
-                    s = refined_signals_gpu[yIdx, :] # gc.flatten() @ stim_data
-                    if (all(element == 0 for element in s)):
-                        # r2 = -2 
-                        num = 3
-                        den = 1
-                    else:      
-                        s_star = O_gpu @ s
-                        s_prime = s_star * (( s_star.T @ s_star ) ** (-1/2))
-                        e = (y.T @ s_prime) ** 2 #<----------------------------------
-                        yt_RRt_y = (y.T @ R_Rt_gpu) @ y
-                        # r2 = 1 - ((yty - e - yt_RRt_y) * ystarT_ystar_inv)
-                        num = (yty - e - yt_RRt_y)
-                        den = ystarT_ystar
+            # Check for zero signals
+            s = refined_signals_gpu
+            zero_mask = np.all(refined_signals_cpu == 0, axis=1)
+            zero_mask = cp.asarray(zero_mask)
 
-                r2_numerator_results_gpu[yIdx] = float(num)
-                r2_denominator_results_gpu[yIdx] = float(den)
+            # Compute s_star
+            s_star = O_gpu @ s.T  # shape: [timepoints, num_signals]
 
-            return r2_numerator_results_gpu, r2_denominator_results_gpu
+            # Normalize s_star to get s_prime
+            s_prime = s_star * (cp.sum(s_star ** 2, axis=0) ** (-0.5)) 
+
+            # Compute error-term e = (y.T @ s_prime)^2
+            e = cp.sum(Y_signals_gpu * s_prime, axis=0) ** 2 #<----------------------------------
+
+            # Compute yt_RRt_y
+            # # yt_RRt_y = cp.sum(Y_signals_gpu * (R_Rt_gpu @ Y_signals_gpu), axis=0)
+            yt_R = Y_signals_gpu * (R_Rt_gpu @ Y_signals_gpu)
+            yt_RRt_y = cp.sum(yt_R, axis=0)
+
+            # Compute final numerator and denominator
+            num = yty - e - yt_RRt_y
+            den = ystarT_ystar
+
+            # Apply masks for nan/zero
+            num = cp.where(nan_mask, 2.0, num)
+            num = cp.where(zero_mask & ~nan_mask, 3.0, num)
+            den = cp.where(nan_mask | zero_mask, 1.0, den)
+
+            return num, den
 
 
     #########
