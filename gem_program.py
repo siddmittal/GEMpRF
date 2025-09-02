@@ -18,6 +18,7 @@ import cProfile
 import pstats
 import io
 import datetime
+import numpy as np
 
 # gem imports
 from gem.model.prf_gaussian_model import PRFGaussianModel
@@ -26,6 +27,7 @@ from gem.model.selected_prf_model import SelectedPRFModel
 from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
+from gem.utils.gem_h5_file_handler import H5FileManager
 
 class SelectedProgram(Enum):
     GEMAnalysis = 0
@@ -54,8 +56,16 @@ def manage_gpus(cfg, max_available_gpus):
     os.environ["CUDA_VISIBLE_DEVICES"] = all_gpus_str
 
 
-def run_selected_program(selected_program, config_filepath, spatial_points_xy = None):
+def run_selected_program(selected_program, config_filepath):
     cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
+
+    # read user defined spatial points, if any
+    spatial_points_xy = None
+    if cfg.optional_analysis_params['enable'] and cfg.optional_analysis_params['spatial_grid_xy']['use_from_file']:
+        spatial_points_xy = H5FileManager.get_key_value(filepath=cfg.optional_analysis_params['filepath'], key = cfg.optional_analysis_params['spatial_grid_xy']['key'])
+        if spatial_points_xy is None:
+            Logger.print_red_message(f"Could not load spatial grid points from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['spatial_grid_xy']['key']}", print_file_name=False)
+            sys.exit(1)
 
     # GPUs management
     #...get max. number of available GPUs without using cuda
@@ -88,7 +98,7 @@ def run_selected_program(selected_program, config_filepath, spatial_points_xy = 
     # selected pRF model
     selected_prf_model = GEMpRFAnalysis.get_selected_prf_model(cfg)                
     if selected_prf_model == SelectedPRFModel.GAUSSIAN:             
-        prf_model = PRFGaussianModel(visual_field_radius= float(cfg.search_space["visual_field"])) 
+        prf_model = PRFGaussianModel(visual_field_radius= np.max(spatial_points_xy)) 
 
     # additional dimensions
     if selected_program == SelectedProgram.GEMAnalysis:

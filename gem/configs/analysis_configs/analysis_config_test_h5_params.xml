@@ -26,13 +26,13 @@
 
   <!-- Input Data -->
   <input_datasrc>    
-    <BIDS enable="True" run_type="concatenated"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
+    <BIDS enable="True" run_type="individual"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
       <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS</basepath>
       <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- specify if the "analysis-xx"  -->          
       <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
 
       <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
-      <results_anaylsis_id overwrite="False">24_TestAnalaysisResults</results_anaylsis_id>
+      <results_anaylsis_id overwrite="False">25_TestH5ParamsFile</results_anaylsis_id>
             
       <!-- 
         NOTE: Case sensitive, provide the exact values!!!
@@ -89,7 +89,7 @@
   <measured_data>
     <width>101</width>
     <height>101</height>
-    <batches>4</batches>    
+    <batches>400</batches>    
   </measured_data>
 
   <!-- GPU configuration -->
@@ -107,14 +107,14 @@
   <!-- Search space information -->
   <search_space>    
     <!-- if the user wants to use custom HRF, pRF sizes or Spatial grid, provide the filepath to the H5 file and the keys for each parameter -->
-    <optional_analysis_params enable="False" filepath="DIR_PATH/analysis_additional_params.h5">
+    <optional_analysis_params enable="True" filepath="/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/main-branch/fmri/gem/configs/analysis_configs/analysis_additional_params.h5">
       <hrf use_from_file="True" key="analysis_params/hrf_values"/>
       <sigmas use_from_file="True" key="analysis_params/sigmas"/>
       <spatial_grid_xy use_from_file="True" key="analysis_params/spatial_grid_xy"/>
     </optional_analysis_params>
     
     <!-- if the user wants to generate a rectilinear grid within the GEM-pRF program, specify the default values below. Please NOTE that these values will ONLY be used if their corresponding optional_analysis_params = False -->
-    <default_spatial_grid visual_field_radius="13.5" num_horizontal_prfs="151" num_vertical_prfs="151"/>
-    <default_sigmas num_sigmas="16" min_sigma="0.5" max_sigma="5"/>
+    <default_spatial_grid visual_field_radius="13.5" num_horizontal_prfs="11" num_vertical_prfs="11"/>
+    <default_sigmas num_sigmas="8" min_sigma="0.5" max_sigma="5"/>
   </search_space>
 </root>

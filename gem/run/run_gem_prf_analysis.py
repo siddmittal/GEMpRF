@@ -4,7 +4,7 @@
 "@Author  :   Siddharth Mittal",
 "@Version :   1.0",
 "@Contact :   siddharth.mittal@meduniwien.ac.at",
-"@License :   (C)Copyright 2024, Medical University of Vienna",
+"@License :   (C)Copyright 2024-2025, Medical University of Vienna",
 "@Desc    :   None",
         
 """
@@ -48,13 +48,25 @@ from gem.data.gem_bids_concatenation_data_info import BidsConcatenationDataInfo
 from gem.data.gem_stimulus_file_info import StimulusFileInfo
 from gem.tools.json_file_operations import JsonMgr
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
+from gem.utils.logger import Logger
+from gem.utils.gem_h5_file_handler import H5FileManager
 
 class GEMpRFAnalysis:
-    # HRF Curve
-    hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
-    # hrf_curve = spm_hrf_compat(hrf_t)
-    hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
     __selected_prf_model = SelectedPRFModel.NoneType
+
+    @classmethod
+    def get_hrf_curve(cls, cfg):
+        if cfg.optional_analysis_params['enable'] and cfg.optional_analysis_params['hrf']['use_from_file']:
+            hrf_curve = H5FileManager.get_key_value(cfg.optional_analysis_params['filepath'], cfg.optional_analysis_params['hrf']['key'])
+            if hrf_curve is None:
+                Logger.print_red_message(f"Could not load HRF curve from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['hrf']['key']}", print_file_name=False)
+                sys.exit(1)
+        else:
+            hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
+            # hrf_curve = spm_hrf_compat(hrf_t)
+            hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
+
+        return hrf_curve
 
     @classmethod
     def load_config(cls, config_filepath : str = None):        
@@ -73,15 +85,18 @@ class GEMpRFAnalysis:
 
         stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize, binarize_threshold=binarize_threshold)
 
+        # get HRF curve
+        hrf_curve = cls.get_hrf_curve(cfg)
+
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
-        stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=cls.hrf_curve)
+        stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=hrf_curve)
 
         return stimulus
         
     @classmethod
     def get_prf_spatial_points(cls, cfg)-> np.ndarray:
-        search_space_xx = np.linspace(-float(cfg.search_space["visual_field"]), float(cfg.search_space["visual_field"]), int(cfg.search_space["nCols"]))
-        search_space_yy = np.linspace(-float(cfg.search_space["visual_field"]), float(cfg.search_space["visual_field"]), int(cfg.search_space["nRows"]))        
+        search_space_xx = np.linspace(-float(cfg.default_spatial_grid["visual_field_radius"]), float(cfg.default_spatial_grid["visual_field_radius"]), int(cfg.default_spatial_grid["num_horizontal_prfs"])) # nCols
+        search_space_yy = np.linspace(-float(cfg.default_spatial_grid["visual_field_radius"]), float(cfg.default_spatial_grid["visual_field_radius"]), int(cfg.default_spatial_grid["num_vertical_prfs"])) # nRows
         x_mesh, y_mesh = np.meshgrid(search_space_xx, search_space_yy) # NOTE: (col, row)
         spatial_points_xy = np.column_stack((y_mesh.ravel(), x_mesh.ravel())) # (col i.e. x, row i.e. y)        
         return spatial_points_xy
@@ -89,7 +104,14 @@ class GEMpRFAnalysis:
     @classmethod
     def get_additional_dimensions(cls, cfg, selected_prf_model : SelectedPRFModel):
         if selected_prf_model == SelectedPRFModel.GAUSSIAN:
-            search_space_sigma_range = np.linspace(float(cfg.search_space["min_sigma"]), float(cfg.search_space["max_sigma"]), int(cfg.search_space["nSigma"])) # 0.5 to 1.5
+            if cfg.optional_analysis_params['enable'] and cfg.optional_analysis_params['sigmas']['use_from_file']: # Get user defined custom values for sigma from H5 file
+                search_space_sigma_range = H5FileManager.get_key_value(filepath=cfg.optional_analysis_params['filepath'], key = cfg.optional_analysis_params['sigmas']['key'])
+                if search_space_sigma_range is None:
+                    Logger.print_red_message(f"Could not load sigma range from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['sigmas']['key']}", print_file_name=False)
+                    sys.exit(1)
+            else: # if user hasn't specifed anything, use default values
+                search_space_sigma_range = np.linspace(float(cfg.default_sigmas['min_sigma']), float(cfg.default_sigmas['max_sigma']), int(cfg.default_sigmas['num_sigmas'])) # 0.5 to 1.5
+
             additional_dimensions = PRFSpace.make_extra_dimensions(search_space_sigma_range)
         else:
             raise ValueError("Invalid PRF Model")
