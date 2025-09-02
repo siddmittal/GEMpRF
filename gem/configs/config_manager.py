@@ -57,7 +57,19 @@ class ConfigurationWrapper:
                 cls.config_data = json_config_data.get("root")
         else:
             print("Config file not found. Make sure it's located in the same directory as the script.")    
-        
+
+    @classmethod
+    def parse_attrs(cls, node, types=None):
+        """Extracts attributes (removes '@'), converts values using types dict if provided."""
+        if node is None:
+            return {}
+        types = types or {}
+        return {
+            k.lstrip("@"): types.get(k.lstrip("@"), str)(v)
+            for k, v in node.items()
+            if k.startswith("@")
+        }  
+
     @classmethod
     def load_configuration(cls, run_type: RunType = None, config_filepath : str = None):
         # if cls.config_data is None: #NOTE: This sometimes lead to unpredictable results, to be on safe side, always load the configuration
@@ -106,6 +118,39 @@ class ConfigurationWrapper:
 
         # Enable/disable Refine fitting  
         cls.refine_fitting_enabled = True if cls.config_data.get("refine_fitting", {}).get("@enable", "false").lower() == "true" else False
+
+        # Optional analysis params
+        opt_node = cls.search_space.get("optional_analysis_params", {})
+        cls.optional_analysis_params = cls.parse_attrs(opt_node, {
+            "enable": lambda v: v.lower() == "true",
+            "filepath": str
+        })
+
+        # ...subnodes of optional_analysis_params
+        for key in ["hrf", "sigmas", "spatial_grid_xy"]:
+            subnode = opt_node.get(key, {})  # <--- get from original XML dict
+            cls.optional_analysis_params[key] = cls.parse_attrs(subnode, {
+                "use_from_file": lambda v: v.lower() == "true",
+                "key": str
+            })   
+
+        # default spatial grid
+        cls.default_spatial_grid = cls.parse_attrs(cls.search_space.get("default_spatial_grid"), {
+            "visual_field_radius": float,
+            "num_horizontal_prfs": int,
+            "num_vertical_prfs": int
+        })
+
+        # default sigmas
+        cls.default_sigmas = cls.parse_attrs(cls.search_space.get("default_sigmas"), {
+            "num_sigmas": int,
+            "min_sigma": float,
+            "max_sigma": float
+        })
+
+        print("Successfully read the config file. ")
+        if cls.optional_analysis_params['enable']:
+            print(f"Analysis params from file: {', '.join(k for k,v in cls.optional_analysis_params.items() if isinstance(v, dict) and v.get('use_from_file', False)) or 'None'}")
 
 # Usage:
 if __name__ == "__main__":
