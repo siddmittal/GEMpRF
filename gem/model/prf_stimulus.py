@@ -3,6 +3,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 import nibabel as nib
 from scipy.ndimage import zoom
+from scipy.signal import fftconvolve
 import os
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
@@ -70,15 +71,26 @@ class Stimulus:
         # # To use High Resolution Stimulus
         # self.resampled_data = self.org_data
 
-    
-    def compute_hrf_convolved_stimulus_data(self, hrf_curve):  
-        stimulus_location_convolved_timecourses = np.empty_like(self.resampled_data, dtype=float)
-        for row in range (self.resampled_data.shape[0]):
-            for col in range (self.resampled_data.shape[1]):
-                location_tc = self.resampled_data[row, col, :]
-                stimulus_location_convolved_timecourses[row, col, :] = np.convolve(location_tc, hrf_curve, mode='full')[:len(location_tc)]  
-        
-        self.__resampled_hrf_convolved_data = stimulus_location_convolved_timecourses
+    def compute_hrf_convolved_stimulus_data(self, hrf_curve):
+        """
+        Computes HRF-convolved stimulus timecourses for all pixels
+        using a vectorized FFT-based approach.
+        """
+        rows, cols, T = self.resampled_data.shape
+        N = rows * cols
+
+        # Flatten spatial dimensions so each row is a pixel timecourse (i.e. each row would contain the values a pixel at all time points)
+        flat = self.resampled_data.reshape(N, T)  # shape: (N, T)
+
+        # FFT-based convolution along time axis
+        conv_full = fftconvolve(flat, hrf_curve[None, :], mode='full', axes=1)
+
+        # Truncate to original length
+        conv_same = conv_full[:, :T]
+
+        # Reshape back to original 3D shape
+        self.__resampled_hrf_convolved_data = conv_same.reshape(rows, cols, T)
+        return self.__resampled_hrf_convolved_data        
 
     def __compute_flattened_columnmajor_stimulus_data(self):  ####<----This one is more correct
         stimulus_flat_data_cpu = self.__resampled_hrf_convolved_data.flatten('F')
