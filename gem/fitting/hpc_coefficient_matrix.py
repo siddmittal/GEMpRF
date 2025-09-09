@@ -36,6 +36,37 @@ class CoefficientMatrix:
 
        C = coefficients[9]
        return A, B, C
+    
+    @classmethod
+    def create_cofficients_matrices_A_B_and_C_vectorized(cls, coefficients):
+       # coefficients = [ a11, a22, a33, a12, a13, a23, b1, b2,  b3, C] <----MIND that a22 is at second position
+       '''   
+           A =[[a11    a12     a13]
+               [a12    a22     a23]
+               [a13    a23     a33]]      
+       ''' 
+       # Extract each coefficient column
+       a11 = coefficients[:, 0]
+       a22 = coefficients[:, 1]
+       a33 = coefficients[:, 2]
+       a12 = coefficients[:, 3]
+       a13 = coefficients[:, 4]
+       a23 = coefficients[:, 5]
+
+       # Stack them into A matrices for all frames
+       A = np.stack([
+           np.stack([a11, a12, a13], axis=1),
+           np.stack([a12, a22, a23], axis=1),
+           np.stack([a13, a23, a33], axis=1)
+       ], axis=1)  # shape: (N, 3, 3)
+
+       # B vectors for all frames
+       B = coefficients[:, 6:9]  # shape: (N, 3)
+
+       # C scalars for all frames
+       C = coefficients[:, 9]     # shape: (N,)
+
+       return A, B, C
 
     @classmethod
     def get_block_indices(cls, row, col, nRows, nCols, distance=1):

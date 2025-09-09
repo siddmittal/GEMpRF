@@ -117,8 +117,13 @@ class ConfigurationWrapper:
         cls.gpu = cls.config_data.get("gpu")           
 
         # Enable/disable Refine fitting  
-        cls.refine_fitting_enabled = True if cls.config_data.get("refine_fitting", {}).get("@enable", "false").lower() == "true" else False
-
+        refine_fitting_node_params = cls.parse_attrs(cls.config_data.get("refine_fitting", {}), {
+            "enable": lambda v: v.lower() == "true",
+            "refinefit_on_gpu": lambda v: v.lower() == "true"
+        })
+        cls.refine_fitting_enabled = refine_fitting_node_params['enable']
+        cls.is_refinefit_on_gpu = refine_fitting_node_params['refinefit_on_gpu']
+     
         # Optional analysis params
         opt_node = cls.search_space.get("optional_analysis_params", {})
         cls.optional_analysis_params = cls.parse_attrs(opt_node, {

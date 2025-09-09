@@ -12,7 +12,7 @@
 <root>
   <!-- Path information -->
   <path_to_append>.../</path_to_append>
-  <refine_fitting enable="True"/>
+  <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
 
   <!-- Stimulus data -->
   <stimulus>

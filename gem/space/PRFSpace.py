@@ -426,15 +426,15 @@ class PRFSpace:
 
         return self.__validated_multidim_indices
 
-    def get_full_2_validated_indices(self, *indices):
+    def get_full_2_validated_indices(self, *indices, invalid_key_value: int = -1)->np.ndarray:
         if self.__full_2_validated_indices_mapping_dict is None:
             self.__full_2_validated_indices_mapping_dict = {idx: i for i, idx in enumerate(self.__validated_multidim_indices)}
 
         # Flatten the input numpy array and convert to a list of individual indices
         indices_list = np.ravel(indices[0]).tolist()
-        mapped_indices = [self.__full_2_validated_indices_mapping_dict.get(idx, None) for idx in indices_list]
+        mapped_indices = [self.__full_2_validated_indices_mapping_dict.get(idx, invalid_key_value) for idx in indices_list]
 
-        return np.array(mapped_indices).reshape(len(mapped_indices), 1)
+        return np.array(mapped_indices, dtype=np.int64).reshape(len(mapped_indices), 1)
 
     def _3d_model_test_visualization(self, multi_dim_query_point, nearest_points):
         """

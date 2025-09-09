@@ -25,6 +25,7 @@ import pstats
 import pandas as pd
 import time
 import datetime
+from contextlib import nullcontext
 
 # gem
 from gem.model.prf_model import PRFModel
@@ -217,7 +218,7 @@ class GEMpRFAnalysis:
 
     @classmethod
     def get_refined_signals_cpu(cls, refined_prf_params_XY : np.ndarray, prf_model : PRFModel, stimulus : Stimulus, cfg):
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_prf_params_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=cp.asnumpy(refined_prf_params_XY), points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
         
         refined_S_cpu = []
         # refined signal batches could be present on different GPUs
@@ -233,9 +234,9 @@ class GEMpRFAnalysis:
         return refined_S_cpu
 
     @classmethod
-    def get_valid_refined_data(cls, refined_matching_results_XY, Y_signals_gpu, O_gpu, prf_model, stimulus, coarse_e_cpu,  best_fit_proj_cpu , coarse_pRF_estimations, cfg):
+    def get_valid_refined_data(cls, refined_matching_results_XY, Y_signals_gpu, O_gpu, prf_model, stimulus, coarse_e,  best_fit_proj , coarse_pRF_estimations, cfg):
         # refined S batches
-        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=refined_matching_results_XY, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
+        refined_S_batches_gpu = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=cp.asnumpy(refined_matching_results_XY), points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
 
         # refined S' batches
         orthonormalized_S_cm_gpu_batches, _ = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu,
@@ -247,10 +248,12 @@ class GEMpRFAnalysis:
                                                                     S_prime_cm_batches_gpu=orthonormalized_S_cm_gpu_batches, 
                                                                     dS_prime_dtheta_cm_batches_list_gpu=[])
 
-        # ...get the locations where the errors are getting worse (ideally (refined - coarse) should be >0)
-        coarse_error_vector = coarse_e_cpu[np.arange(len(coarse_e_cpu)), best_fit_proj_cpu]
+        # ...get the locations where the errors are getting worse (ideally (refined - coarse) should be >0)        
+        coarse_error_vector = coarse_e[np.arange(len(coarse_e)), best_fit_proj]
+        coarse_error_vector = cp.asnumpy(coarse_error_vector) if isinstance(coarse_error_vector, cp.ndarray) else coarse_error_vector
         refined_error_vector = np.diagonal(refined_e_cpu)
-        worsened_error_y_signal_indices = np.argwhere((~np.isnan(refined_error_vector - coarse_error_vector)) & (refined_error_vector - coarse_error_vector < 0))
+        diff = refined_error_vector - coarse_error_vector
+        worsened_error_y_signal_indices = np.argwhere((~np.isnan(diff)) & (diff < 0))
 
         # keep the coarse pRF parameters where the refined esitmations got worse
         refined_matching_results_XY[worsened_error_y_signal_indices, :] = coarse_pRF_estimations[worsened_error_y_signal_indices, :]
@@ -268,6 +271,7 @@ class GEMpRFAnalysis:
         Y_signals_cpu = y_data.get_y_signals(measured_data_filepath)
 
         # process bathches
+        Y_signals_cpu = Y_signals_cpu[:, None] if Y_signals_cpu.ndim == 1 else Y_signals_cpu # in case only one signal is present
         total_y_signals = Y_signals_cpu.shape[1]
         num_batches = int(cfg.measured_data["batches"])
         batch_size = max(1, int(total_y_signals / num_batches)) # to deal with the situation of only one y_signal, which will result in batch_size = 0
@@ -278,10 +282,10 @@ class GEMpRFAnalysis:
             # error
             # prf_analysis.error_e = (Y_signals_batch_gpu.T @ dS_prime_dtheta_columnmajor_gpu)
             error_term_computation_func = GridFit.get_error_terms if cfg.refine_fitting_enabled else GridFit.get_only_error_terms
-            best_fit_proj_cpu, e_cpu, de_dtheta_list_cpu = error_term_computation_func(isResultOnGPU=False, 
-                                                                Y_signals_gpu=Y_signals_batch_gpu, 
-                                                                S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches, 
-                                                                dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
+            best_fit_proj, e, de_dtheta_3darr = error_term_computation_func(isResultOnGPU=((cfg.is_refinefit_on_gpu & cfg.refine_fitting_enabled) | (not cfg.refine_fitting_enabled)),
+                                                                           Y_signals_gpu=Y_signals_batch_gpu,
+                                                                           S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches,
+                                                                           dS_prime_dtheta_cm_batches_list_gpu=prf_analysis.orthonormalized_dS_dtheta_batches_list)
             
             # Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
 
@@ -289,21 +293,27 @@ class GEMpRFAnalysis:
             # perform refine search, the obtained refined results will be in the (X, Y) format
             if cfg.refine_fitting_enabled:
                 num_Y_signals = Y_signals_batch_cpu.shape[1]
-                refined_matching_results_XY, Fex_results = RefineFit.get_refined_fit_results(
-                    prf_space,
-                    num_Y_signals,
-                    best_fit_proj_cpu,
-                    arr_2d_location_inv_M_cpu,
-                    e_cpu,
-                    de_dtheta_list_cpu) 
+                refined_matching_results_XY, Fex_results = RefineFit.get_refined_fit_results(prf_space,
+                                                                                             num_Y_signals,
+                                                                                             best_fit_proj,
+                                                                                             arr_2d_location_inv_M_cpu,
+                                                                                             e,
+                                                                                             de_dtheta_3darr)
         
-            
-            coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu] # NOTE: The coarse_estimation values are in XY format (i.e. (col, row) format)
+            # NOTE: The coarse_estimation values are in XY format (i.e. (col, row) format)
+            coarse_pRF_estimations = (prf_space.multi_dim_points_cpu, prf_space.multi_dim_points_gpu)[((cfg.is_refinefit_on_gpu & cfg.refine_fitting_enabled) | (not cfg.refine_fitting_enabled))][best_fit_proj]
             
             # validate if the refined pRF estimations are really improving the error value, and for the pRF points where error is getting worse, keep the coarse pRF estimations
             if cfg.refine_fitting_enabled:
-                valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, Y_signals_gpu=Y_signals_batch_gpu,
-                                                                    O_gpu=O_gpu, prf_model=prf_model, stimulus=stimulus, coarse_e_cpu=e_cpu, best_fit_proj_cpu=best_fit_proj_cpu, coarse_pRF_estimations=coarse_pRF_estimations, cfg=cfg)
+                valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY,
+                                                                                          Y_signals_gpu=Y_signals_batch_gpu,
+                                                                                          O_gpu=O_gpu,
+                                                                                          prf_model=prf_model,
+                                                                                          stimulus=stimulus,
+                                                                                          coarse_e=e,
+                                                                                          best_fit_proj=best_fit_proj,
+                                                                                          coarse_pRF_estimations=coarse_pRF_estimations,
+                                                                                          cfg=cfg)
             else:
                 valid_refined_prf_points_XY_batch = coarse_pRF_estimations
 
@@ -330,6 +340,7 @@ class GEMpRFAnalysis:
     def concatenated_run(cls, cfg, prf_model, prf_space):
         # cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
         default_gpu_id = ggm.get_instance().default_gpu_id
+        refinefit_on_gpu = cfg.is_refinefit_on_gpu & cfg.refine_fitting_enabled
         
         # data info
         required_concatenations_info = cls.get_concatenated_runs_data_files_info(cfg)
@@ -384,12 +395,13 @@ class GEMpRFAnalysis:
             def __init__(self, Y_signals_cpu, task_name):
                 self.Y_signals_cpu = Y_signals_cpu
                 self.task_name = task_name
-        # arr_Y_signals_cpu = []
+
         counter = 0
         for concatenate_block_info in required_concatenations_info:            
             counter += 1
             json_data = None   
             # Collect Y-Signals
+            start_time = time.time()
             arr_Y_signals_cpu = []
             num_concatenation_items = len(concatenate_block_info.filepaths_to_be_concatenated) 
             for concat_item_idx in range(num_concatenation_items):
@@ -418,8 +430,8 @@ class GEMpRFAnalysis:
             for current_batch_idx in range(0, total_y_signals, batch_size):    
                 # go through all datasets and compute error terms for each run
                 # arr_e_cpu = None #cp.empty((num_runs, batch_size, num_signals)) #[]
-                arr_e_cpu = []
-                arr_de_dtheta_full_cpu = []
+                arr_e_list = []
+                arr_de_dtheta_full_list = []
                 Y_signals_batch_gpu_list = []
                 for concat_item_idx in range(num_concatenation_items):                                
                     # current Y-BATCH, for current dataset
@@ -428,58 +440,44 @@ class GEMpRFAnalysis:
                     Y_signals_batch_cpu = (arr_Y_signals_cpu[concat_item_idx].Y_signals_cpu)[:, current_batch_idx: current_batch_idx + batch_size]
                     num_Y_signals_in_batch = Y_signals_batch_cpu.shape[1] # this is just the number of Y-signals in the current batch, it is independent of the task-name
                     current_data_task = arr_Y_signals_cpu[concat_item_idx].task_name
-                    _, e_gpu, de_dtheta_full_list_gpu = GridFit.get_error_terms(isResultOnGPU=True, 
-                                                            Y_signals_gpu=Y_signals_batch_gpu, 
-                                                            S_prime_cm_batches_gpu= task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_S_batches, 
-                                                            dS_prime_dtheta_cm_batches_list_gpu=task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_dS_dtheta_batches_list)
+                    _, e_gpu, de_dtheta_full_list = GridFit.get_error_terms(isResultOnGPU=((cfg.is_refinefit_on_gpu & cfg.refine_fitting_enabled) | (not cfg.refine_fitting_enabled)),
+                                                                                Y_signals_gpu=Y_signals_batch_gpu,
+                                                                                S_prime_cm_batches_gpu=task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_S_batches,
+                                                                                dS_prime_dtheta_cm_batches_list_gpu=task_specific_data_dict[current_data_task].prf_analysis.orthonormalized_dS_dtheta_batches_list)
                 
-                    arr_e_cpu.append(e_gpu)
-                    arr_de_dtheta_full_cpu.append(de_dtheta_full_list_gpu)
+                    arr_e_list.append(e_gpu)
+                    arr_de_dtheta_full_list.append(de_dtheta_full_list)
 
                 # NOTE: process this batch of concatenation block
                 # ...sum up the error terms (e and de_dtheta) for all the runs
-                # ...current Y-BATCH concatenated error terms
-                with cp.cuda.Device(default_gpu_id):
-                    if len(arr_e_cpu) < 3: # i.e. two items to be concatenated
-                        concatenated_e_gpu = cp.add(*arr_e_cpu)
-                    else:
-                        concatenated_e_gpu = arr_e_cpu[0]
-                        for arr in arr_e_cpu[1:]:
-                            concatenated_e_gpu = cp.add(concatenated_e_gpu, arr) # tried to use "concatenated_e_gpu = cp.add(*arr_e_cpu)" but cp.add() can work with only 2 or 3 arguments.
+                # ...current Y-BATCH concatenated error terms                                            
+                xp = cp if refinefit_on_gpu else np
+                ctx = cp.cuda.Device(default_gpu_id) if refinefit_on_gpu else nullcontext()
+                with ctx:                                        
+                    # ...sum up e terms
+                    arr_e = xp.stack(arr_e_list, axis=0)
+                    concatenated_e = xp.sum(arr_e, axis=0)                    
 
-                # sumup de_dtheta terms
-                # # # ...transpose the list of lists to group corresponding positions together
-                # # transposed_arr_de_dtheta_full_list_gpu = list(map(list, zip(*arr_de_dtheta_full_cpu)))                
-                # # concatenated_de_dtheta_list = [cp.sum(cp.stack(arrays, axis=0), axis=0) for arrays in transposed_arr_de_dtheta_full_list_gpu] # Sum the corresponding positions
-                with cp.cuda.Device(default_gpu_id):
-                    concatenated_de_dtheta_list_cpu = []
-                    for de_dtheta_idx in range(prf_model.num_dimensions):
-                        de_dtheta_from_all_runs = []
-                        for concat_item_idx in range(num_concatenation_items):                                                
-                            de_dtheta_from_all_runs.append(arr_de_dtheta_full_cpu[concat_item_idx][de_dtheta_idx])
-                        if len(de_dtheta_from_all_runs) < 3: # i.e. two items to be concatenated
-                            concatenated_de_dtheta = cp.add(*de_dtheta_from_all_runs) # sum-up
-                        else:
-                            concatenated_de_dtheta = de_dtheta_from_all_runs[0]
-                            for arr in de_dtheta_from_all_runs[1:]:
-                                concatenated_de_dtheta = cp.add(concatenated_de_dtheta, arr)
-                        concatenated_de_dtheta_list_cpu.append(cp.asnumpy(concatenated_de_dtheta))
+                    if cfg.refine_fitting_enabled:
+                        # ...sum up de_dtheta terms
+                        arr_de_dtheta_full = xp.stack(arr_de_dtheta_full_list, axis=0) #shape = (num items to concatenate, num params, num y signals, num model signals)
+                        concatenated_de_dtheta = xp.sum(arr_de_dtheta_full, axis=0)
 
-
-                # current Y-BATCH concatenated best fit
-                with cp.cuda.Device(default_gpu_id):
-                    best_fit_proj_gpu = np.nanargmax(concatenated_e_gpu, axis=1)
-                    best_fit_proj_cpu = cp.asnumpy(best_fit_proj_gpu)
+                    best_fit_proj = xp.nanargmax(concatenated_e, axis=1)# current Y-BATCH concatenated best fit                    
 
                 #  current Y-BATCH refine fit
-                refined_matching_results_XY, _ = RefineFit.get_refined_fit_results(
-                    prf_space=prf_space,                    
-                    num_Y_signals=num_Y_signals_in_batch, 
-                    best_fit_proj_cpu=best_fit_proj_cpu,
-                    arr_2d_location_inv_M_cpu=arr_2d_location_inv_M_cpu,
-                    e_full=concatenated_e_gpu,  # send overall error terms
-                    de_dtheta_list_cpu=concatenated_de_dtheta_list_cpu)
-                
+                refined_matching_results_XY = None
+                coarse_pRF_estimations = None
+                if cfg.refine_fitting_enabled:
+                    refined_matching_results_XY, _ = RefineFit.get_refined_fit_results(prf_space=prf_space,
+                                                                                    num_Y_signals=num_Y_signals_in_batch,
+                                                                                    best_fit_proj=best_fit_proj,
+                                                                                    arr_2d_location_inv_M_cpu=arr_2d_location_inv_M_cpu,
+                                                                                    e_full=concatenated_e,  # send overall error terms
+                                                                                    de_dtheta_3darr=concatenated_de_dtheta)
+                else:
+                    coarse_pRF_estimations = (prf_space.multi_dim_points_cpu, prf_space.multi_dim_points_gpu)[((cfg.is_refinefit_on_gpu & cfg.refine_fitting_enabled) | (not cfg.refine_fitting_enabled))][best_fit_proj]
+                                        
                 # # # NOTE NOTE NOTE: Validate the refined results!!!!!!!!!!! STEP MISSING: because for this, we need to compute the results with the all stimuli used for different tasks, it will waste a lot of time.
                 # # coarse_pRF_estimations = prf_space.multi_dim_points_cpu[best_fit_proj_cpu]
                 # # valid_refined_prf_points_XY_batch = GEMpRFAnalysis.get_valid_refined_data(refined_matching_results_XY, 
@@ -491,9 +489,8 @@ class GEMpRFAnalysis:
                 # #                                                                           best_fit_proj_cpu=best_fit_proj_cpu, 
                 # #                                                                           coarse_pRF_estimations=coarse_pRF_estimations)
 
-                valid_refined_prf_points_XY_batch = refined_matching_results_XY
-                # valid_refined_prf_points_YX_batch = valid_refined_prf_points_XY_batch
-                # valid_refined_prf_points_YX_batch[:, [0, 1]] = valid_refined_prf_points_YX_batch[:, [1, 0]] # the CUDA code expected the (row, col) i.e. (y, x) convention
+                # Final results 
+                valid_refined_prf_points_XY_batch = (coarse_pRF_estimations, refined_matching_results_XY)[cfg.refine_fitting_enabled]
 
                 valid_refined_S_cpu_batch_list = []
                 for concat_item_idx in range(num_concatenation_items):
@@ -513,7 +510,7 @@ class GEMpRFAnalysis:
                     task_specific_O_gpu = task_specific_data_dict[stimulus_task_name].O_gpu
                     num_gpu, den_gpu = R2.get_r2_numerator_denominator_terms(Y_signals_batch_gpu_list[concat_item_idx], 
                                                                              task_specific_O_gpu, 
-                                                                             refined_matching_results_XY, 
+                                                                             valid_refined_prf_points_XY_batch, 
                                                                              valid_refined_S_cpu_batch_list[concat_item_idx])
                     numerators_gpu[concat_item_idx] = num_gpu
                     denominators_gpu[concat_item_idx] = den_gpu
@@ -533,7 +530,11 @@ class GEMpRFAnalysis:
             # NOTE: Write the full results of the current concatenation block to file
             JsonMgr.write_to_file(filepath=concatenate_block_info.concatenation_result_filepath, data=json_data)   
 
-
+            # end time
+            end_time = time.time()
+            iteration_time = end_time - start_time
+            # iteration_times.append(iteration_time)
+            print(f"Time taken for this analysis: {iteration_time}")
         
         print
 

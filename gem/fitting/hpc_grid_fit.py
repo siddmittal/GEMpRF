@@ -50,13 +50,15 @@ class GridFit:
             e_result_gpu = cp.zeros((total_y_signals, total_model_signals), dtype=cp.float64)
 
             # derivative error terms result
-            de_dtheta_batches_list = [None] * num_theta_params                
-            for theta in range(num_theta_params):
+            if num_theta_params > 0:
                 if isResultOnGPU:
-                    de_dtheta_batches_list[theta] = cp.zeros((total_y_signals, total_model_signals), dtype=cp.float64)
+                    # shape: (num_theta_params, total_y_signals, total_model_signals)
+                    de_dtheta_batches_3darr = cp.zeros((num_theta_params, total_y_signals, total_model_signals), dtype=cp.float64)
                 else:
-                    de_dtheta_batches_list[theta] = np.zeros((total_y_signals, total_model_signals), dtype=np.float64)
-        
+                    de_dtheta_batches_3darr = np.zeros((num_theta_params, total_y_signals, total_model_signals), dtype=np.float64)
+            else:
+                de_dtheta_batches_3darr = None
+
         # process each batch individually and store the results
         column_idx = 0
         for batch_idx in range(num_batches):
@@ -79,9 +81,9 @@ class GridFit:
             for theta in range(num_theta_params):
                 if isResultOnGPU: # i.e. in case of concatenated runs, we want the errors to stay on GPU
                     with cp.cuda.Device(default_gpu_id):                    
-                        de_dtheta_batches_list[theta][:, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta] if chunk_de_dtheta_gpu[theta].device.id == default_gpu_id else cp.asarray(chunk_de_dtheta_gpu[theta])
+                        de_dtheta_batches_3darr[theta, :, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta] if chunk_de_dtheta_gpu[theta].device.id == default_gpu_id else cp.asarray(chunk_de_dtheta_gpu[theta])
                 else:
-                    de_dtheta_batches_list[theta][:, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta]
+                    de_dtheta_batches_3darr[theta, :, column_idx : column_idx + num_signals_current_batch] = chunk_de_dtheta_gpu[theta]
 
             # finally, get the "error" result back to device-0
             with cp.cuda.Device(default_gpu_id):
@@ -93,7 +95,7 @@ class GridFit:
             # Note: update index               
             column_idx = column_idx + num_signals_current_batch
         
-        return e_result_gpu, de_dtheta_batches_list
+        return e_result_gpu, de_dtheta_batches_3darr
 
     @classmethod    
     def _get_only_error_terms_from_batches(cls, Y_signals_gpu, S_prime_columnmajor_gpu_batches):        
@@ -139,7 +141,7 @@ class GridFit:
         # nomalization of signals/timecourses (present along the columns)
 
         # all in one
-        e_gpu, de_dtheta_list_gpu = cls._get_error_terms_from_batches(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu)
+        e_gpu, de_dtheta_3darr_gpu = cls._get_error_terms_from_batches(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu)
 
         with cp.cuda.Device(ggm.get_instance().default_gpu_id):
             e_gpu[cp.isinf(e_gpu) & (e_gpu > 0)] = -cp.inf # replace +inf with -inf so that indices with "inf" are not seleted as best fit
@@ -151,19 +153,14 @@ class GridFit:
             ###---return results on CPU or GPU
             # GPU result
             if isResultOnGPU:
-                return cp.asarray(best_fit_proj_cpu), e_gpu, de_dtheta_list_gpu
+                return cp.asarray(best_fit_proj_cpu), e_gpu, de_dtheta_3darr_gpu
             
             # CPU result
             else:            
                 best_fit_proj_cpu = cp.asnumpy(best_fit_proj_cpu)
                 e_cpu = cp.asnumpy(e_gpu)
 
-                num_theta_params = len(de_dtheta_list_gpu)
-                de_dtheta_batches_cpu = [None] * num_theta_params
-                for theta in range(num_theta_params):    
-                        de_dtheta_batches_cpu[theta] = cp.asnumpy(de_dtheta_list_gpu[theta])
-                        
-                return best_fit_proj_cpu, e_cpu, de_dtheta_batches_cpu
+                return best_fit_proj_cpu, e_cpu, cp.asnumpy(de_dtheta_3darr_gpu)
                 
     @classmethod
     # Note: all ORTHOGONALIZED signals "S" are assumed along Columns
@@ -176,7 +173,7 @@ class GridFit:
         ###---return results on CPU or GPU
         # GPU result
         if isResultOnGPU:            
-            return ggm.execute_cupy_func_on_default(cp.asarray, cupy_func_args=(best_fit_proj_cpu,)), e_gpu
+            return ggm.get_instance().execute_cupy_func_on_default(cupy_func = cp.asarray, cupy_func_args=(best_fit_proj_cpu,)), e_gpu, None
         
         # CPU result
         else:            

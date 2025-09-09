@@ -133,7 +133,7 @@ class SignalSynthesizer:
 
     @classmethod
     # def compute_signals_batches(cls, prf_space : PRFSpace, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None):  # NOTE: use Enum for derivative_wrt
-    def compute_signals_batches(cls, prf_multi_dim_points_cpu : cp.ndarray, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None, cfg = None):  # NOTE: use Enum for derivative_wrt
+    def compute_signals_batches(cls, prf_multi_dim_points_cpu : np.ndarray, points_indices_mask : np.ndarray,  prf_model : PRFModel, stimulus : Stimulus, derivative_wrt : Enum, orthonormalized_model_signals : cp.ndarray = None, cfg = None):  # NOTE: use Enum for derivative_wrt
         # results batches
         result_batches = [] 
 
