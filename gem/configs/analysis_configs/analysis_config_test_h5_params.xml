@@ -12,12 +12,13 @@
 <root>
   <!-- Path information -->
   <path_to_append>.../</path_to_append>
-  <refine_fitting enable="True"/>
+  <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
 
   <!-- Stimulus data -->
   <stimulus>
     <!-- File path for stimulus -->
-    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>         
+    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>
+    <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->  
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
@@ -32,7 +33,10 @@
       <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
 
       <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
-      <results_anaylsis_id overwrite="False">25_TestH5ParamsFile</results_anaylsis_id>
+      <!-- 26e_VerifyRefinefitOptimization-AfterGPU+ErrorOnGPU -->
+      <!-- 25c'_TestH5ParamsFile_backup-20250902-095402_ConcatenatedRun-RectlinearGrid_OptimizedRefinefit -->
+      <!-- 26d'_VerifyRefinefitOptimization-AfterGPU+ErrorOnGPU -->
+      <results_anaylsis_id overwrite="False">000_dummy</results_anaylsis_id>
             
       <!-- 
         NOTE: Case sensitive, provide the exact values!!!
@@ -41,14 +45,13 @@
         Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
       -->
       <analysis>01</analysis>
-      <sub>001</sub>
+      <sub>001, 002</sub>
       <hemi>all</hemi>
 
       <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
-        <ses>001nn</ses> <!-- comma separated values or specify "all" -->
-        <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->
-        <run>01</run> <!-- comma separated values or specify "all" -->
+        <ses>001nn</ses> <!-- comma separated values or specify "all" -->        
+        <run>01, 02</run> <!-- comma separated values or specify "all" -->
       </individual>
 
       <!--CONCATENATED Analysis-->
@@ -89,13 +92,13 @@
   <measured_data>
     <width>101</width>
     <height>101</height>
-    <batches>400</batches>    
+    <batches>200</batches>    
   </measured_data>
 
   <!-- GPU configuration -->
   <gpu>
     <!-- Default GPU -->
-    <default_gpu>0</default_gpu>
+    <default_gpu>3</default_gpu>
     <!-- Additional available GPUs -->
     <additional_available_gpus>
       <gpu>1</gpu>
@@ -107,7 +110,7 @@
   <!-- Search space information -->
   <search_space>    
     <!-- if the user wants to use custom HRF, pRF sizes or Spatial grid, provide the filepath to the H5 file and the keys for each parameter -->
-    <optional_analysis_params enable="True" filepath="/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/main-branch/fmri/gem/configs/analysis_configs/analysis_additional_params.h5">
+    <optional_analysis_params enable="False" filepath="/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/dgx-versions/main-branch/fmri/gem/configs/analysis_configs/analysis_additional_params.h5">
       <hrf use_from_file="True" key="analysis_params/hrf_values"/>
       <sigmas use_from_file="True" key="analysis_params/sigmas"/>
       <spatial_grid_xy use_from_file="True" key="analysis_params/spatial_grid_xy"/>
@@ -115,6 +118,6 @@
     
     <!-- if the user wants to generate a rectilinear grid within the GEM-pRF program, specify the default values below. Please NOTE that these values will ONLY be used if their corresponding optional_analysis_params = False -->
     <default_spatial_grid visual_field_radius="13.5" num_horizontal_prfs="11" num_vertical_prfs="11"/>
-    <default_sigmas num_sigmas="8" min_sigma="0.5" max_sigma="5"/>
+    <default_sigmas num_sigmas="16" min_sigma="0.5" max_sigma="5"/>
   </search_space>
 </root>

@@ -17,7 +17,8 @@
   <!-- Stimulus data -->
   <stimulus>
     <!-- File path for stimulus -->
-    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>         
+    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>
+    <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->  
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
@@ -47,7 +48,6 @@
       <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
         <ses>001nn</ses> <!-- comma separated values or specify "all" -->
-        <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->
         <run>01</run> <!-- comma separated values or specify "all" -->
       </individual>
 
