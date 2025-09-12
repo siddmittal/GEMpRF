@@ -26,6 +26,7 @@ from gem.space.PRFSpace import PRFSpace
 from gem.model.selected_prf_model import SelectedPRFModel
 from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
+from gem.utils.gem_write_to_file import GemWriteToFile
 from gem.utils.logger import Logger
 from gem.utils.gem_h5_file_handler import H5FileManager
 
@@ -108,13 +109,17 @@ def run_selected_program(selected_program, config_filepath):
     prf_space.convert_spatial_to_multidim()
     prf_space.keep_validated_sampling_points(prf_model.get_validated_sampling_points_indices) # update the computed multi-dimensional points array
 
+    # NOTE
+    _ = GemWriteToFile(result_dir = result_dir, debugging_enabled=cfg.write_debug_info) # initialize the GemWriteToFile singleton instance
+    GemWriteToFile.get_instance().write_array_to_h5(prf_space.multi_dim_points_cpu, variable_path=['model', 'prf_grid'], append_to_existing_variable=False)
+
     # run the pRF analysis
     if selected_program == SelectedProgram.GEMAnalysis:             
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
         
 
 def wm():
-    Logger.print_red_message("""
+    Logger.print_yellow_message("""
         ============================================================
         GEM pRF Analysis - Unreleased Version for Testing Only
         ============================================================

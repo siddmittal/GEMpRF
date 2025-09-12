@@ -23,6 +23,9 @@
     <width>101</width>
     <height>101</height>
     <binarization enable="False" threshold="0"/> <!-- stimulus will be binarized if enabled, all values above threshold will be set to 1 and below to 0 -->	
+    
+    <!-- Compute model signals with high-res stimulus then downsample: "num_frames_downsampled" = your fMRI timecourse length, "slice_time_ref" for details see https://www.alivelearn.net/?p=1037 -->
+    <high_temporal_resolution enable="true" num_frames_downsampled="240" slice_time_ref="0.5"/>
   </stimulus>
 
   <!-- Input Data -->
@@ -105,7 +108,7 @@
   </gpu>
 
   <!-- Search space information -->
-  <search_space>    
+  <search_space write_debug_info="false">    
     <!-- if the user wants to use custom HRF, pRF sizes or Spatial grid, provide the filepath to the H5 file and the keys for each parameter -->
     <optional_analysis_params enable="False" filepath="DIR_PATH/analysis_additional_params.h5">
       <hrf use_from_file="True" key="analysis_params/hrf_values"/>

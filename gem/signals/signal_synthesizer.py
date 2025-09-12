@@ -4,11 +4,13 @@
 "@Author  :   Siddharth Mittal",
 "@Version :   1.0",
 "@Contact :   siddharth.mittal@meduniwien.ac.at",
-"@License :   (C)Copyright 2024, Siddharth Mittal",
+"@License :   (C)Copyright 2024-2025, Siddharth Mittal",
 "@Desc    :   None",     
 """
 
+import math
 import os
+import sys
 from typing import List
 import numpy as np
 import cupy as cp
@@ -22,6 +24,7 @@ from gem.space.PRFSpace import PRFSpace
 from gem.model.prf_model import GaussianModelParams
 from gem.model.prf_model import DoGModelParams
 from gem.utils.hpc_cupy_utils import HpcUtils as gpu_utils
+from gem.utils.gem_write_to_file import GemWriteToFile
 from gem.utils.logger import Logger
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 
@@ -213,6 +216,18 @@ class SignalSynthesizer:
                         print(f"{str(e)}.\nTry to reduce chunk size per GPU or contact the author siddharth.mittal@meduniwien.ac.at")
                         raise e
 
+                # Downsample the signals length in case of using high-res stimulus       
+                if stimulus.HighTemporalResolutionEnabled:                       
+                    if signal_rowmajor_batch_current_gpu.shape[1] < stimulus.NumFramesDownsampled: # i.e. if the number of frames in stimulus is less than the downsampled length
+                        Logger.print_red_message(f"Number of frames in provided stimulus ({signal_rowmajor_batch_current_gpu.shape[1]}) is less than the specified downsampled length ({stimulus.NumFramesDownsampled}).\
+                                                 \nPlease check your config file (high_temporal_resolution) and/or stimulus.", print_file_name=False)
+                        sys.exit(1)
+                    
+
+                    step_size = signal_rowmajor_batch_current_gpu.shape[1] // stimulus.NumFramesDownsampled  # only interested in changing the length of the signal
+                    first_sample_point = int(math.floor(stimulus.SliceTimeRef * step_size))
+                    signal_rowmajor_batch_current_gpu = signal_rowmajor_batch_current_gpu[:, first_sample_point::step_size] # plt.plot(cp.asnumpy(signal_rowmajor_batch_current_gpu[0])[0, :])   
+
                 result_batches.append(signal_rowmajor_batch_current_gpu)
                 num_signals_computed += len(signal_rowmajor_batch_current_gpu)
 
@@ -262,5 +277,10 @@ class SignalSynthesizer:
                         orthonormalized_derivatives_signals_batches_list[theta] = [dS_prime_dtheta_batch_cm_gpu]
                     else:
                         (orthonormalized_derivatives_signals_batches_list[theta]).append(dS_prime_dtheta_batch_cm_gpu) # column major
-                            
+
+        # Write debug info
+        GemWriteToFile.get_instance().write_array_to_h5(S_prime_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
+        for theta_idx in range(num_theta_params):
+            GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_derivatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+
         return S_prime_batches, orthonormalized_derivatives_signals_batches_list

@@ -97,12 +97,25 @@ class ConfigurationWrapper:
 
         # Stimulus
         cls.stimulus = cls.config_data.get("stimulus")
+        # ...subnodes of stimulus
+        high_temp_res_node = cls.stimulus.get("high_temporal_resolution", {})
+        cls.stimulus_high_temporal_resolution = cls.parse_attrs(high_temp_res_node, {
+            "enable": lambda v: v.lower() == "true",
+            "num_frames_downsampled": int,
+            "slice_time_ref": float
+        })
         
         # Measure Data
         cls.measured_data = cls.config_data.get("measured_data")
         
         # Search Space
-        cls.search_space = cls.config_data.get("search_space")  
+        cls.search_space = cls.config_data.get("search_space")
+
+        # ...whether to write debug info or not
+        search_space_attrs = cls.parse_attrs(cls.search_space, {
+            "write_debug_info": lambda v: v.lower() == "true"
+        })
+        cls.write_debug_info = search_space_attrs.get("write_debug_info", False)  
 
         # Concatenated runs
         cls.concatenated_runs = cls.config_data.get("concatenated_runs")        

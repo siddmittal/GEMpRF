@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""
+"@Author  :   Siddharth Mittal",
+"@Version :   1.0",
+"@Contact :   siddharth.mittal@meduniwien.ac.at",
+"@License :   (C)Copyright 2024-2025, Siddharth Mittal",
+"@Desc    :   None",     
+"""
+
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
@@ -9,7 +19,7 @@ from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
 
 class Stimulus:
-    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold):
+    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold, high_temporal_resolution_info=None):
         # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
         script_directory = os.path.dirname(os.path.abspath(__file__))
         stimulus_file_path = os.path.join(script_directory, relative_file_path)
@@ -30,6 +40,16 @@ class Stimulus:
         self.y_range_cpu = np.linspace(-float(stim_config["visual_field"]), +float(stim_config["visual_field"]), int(stim_config["height"]))
         self.x_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.x_range_cpu,))
         self.y_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.y_range_cpu,))
+
+        # high temporal resolution stimulus params
+        if high_temporal_resolution_info:
+            self.__high_temporal_resolution = True
+            self.__num_frames_downsampled = high_temporal_resolution_info['num_frames_downsampled']
+            self.__slice_time_ref = high_temporal_resolution_info['slice_time_ref']
+        else:
+            self.__high_temporal_resolution = False
+            self.__num_frames_downsampled = None
+            self.__slice_time_ref = None
 
     """Column major stimulus data on GPU"""
     @property
@@ -56,6 +76,18 @@ class Stimulus:
     @property
     def NumFrames(self):
         return self.org_data.shape[2]
+    
+    @property
+    def HighTemporalResolutionEnabled(self):
+        return self.__high_temporal_resolution
+    
+    @property
+    def NumFramesDownsampled(self):
+        return self.__num_frames_downsampled
+    
+    @property
+    def SliceTimeRef(self):
+        return self.__slice_time_ref
 
     def compute_resample_stimulus_data(self
                                , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])

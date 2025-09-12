@@ -8,6 +8,7 @@
 "@Desc    :   None",
         
 """
+import math
 import shutil
 import sys
 import os
@@ -41,6 +42,7 @@ from gem.model.selected_prf_model import SelectedPRFModel
 from gem.signals.signal_synthesizer import SignalSynthesizer
 from gem.model.prf_stimulus import Stimulus
 from gem.utils.logger import Logger
+from gem.utils.gem_write_to_file import GemWriteToFile
 from gem.analysis.prf_r2_variance_explain import R2
 from gem.data.observed_data import ObservedData, DataSource
 from gem.signals.orthogonalization_matrix import OrthoMatrix
@@ -51,21 +53,27 @@ from gem.tools.json_file_operations import JsonMgr
 from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
 from gem.utils.gem_h5_file_handler import H5FileManager
+from gem.signals.hrf_generator import spm_hrf_compat
 
 class GEMpRFAnalysis:
     __selected_prf_model = SelectedPRFModel.NoneType
 
     @classmethod
-    def get_hrf_curve(cls, cfg):
+    def get_hrf_curve(cls, cfg, stimulus : Stimulus):
         if cfg.optional_analysis_params['enable'] and cfg.optional_analysis_params['hrf']['use_from_file']:
             hrf_curve = H5FileManager.get_key_value(cfg.optional_analysis_params['filepath'], cfg.optional_analysis_params['hrf']['key'])
             if hrf_curve is None:
                 Logger.print_red_message(f"Could not load HRF curve from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['hrf']['key']}", print_file_name=False)
                 sys.exit(1)
         else:
-            hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
-            # hrf_curve = spm_hrf_compat(hrf_t)
-            hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
+            if stimulus.HighTemporalResolutionEnabled:
+                hrf_t_length = math.ceil(stimulus.NumFrames * 0.10)
+                hrf_t = np.linspace(0, 30 , hrf_t_length)
+                hrf_curve = spm_hrf_compat(hrf_t)                
+            else:    
+                hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
+                # hrf_curve = spm_hrf_compat(hrf_t)
+                hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
 
         return hrf_curve
 
@@ -83,14 +91,24 @@ class GEMpRFAnalysis:
         stim_height = int(cfg.stimulus["height"])  
         binarize = True if cfg.stimulus["binarization"].get("@enable") == "True" else False
         binarize_threshold = float(cfg.stimulus["binarization"].get("@threshold"))
+        high_temporal_resolution_info = cfg.stimulus_high_temporal_resolution if cfg.stimulus_high_temporal_resolution['enable'] else None
 
-        stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, stimulus_info.stimulus_filename), size_in_degrees=float(cfg.stimulus["visual_field"]), stim_config = cfg.stimulus, binarize=binarize, binarize_threshold=binarize_threshold)
+        stimulus = Stimulus(os.path.join(stimulus_info.stimulus_dir, 
+                                         stimulus_info.stimulus_filename), 
+                                         size_in_degrees=float(cfg.stimulus["visual_field"]), 
+                                         stim_config = cfg.stimulus, 
+                                         binarize=binarize, 
+                                         binarize_threshold=binarize_threshold,
+                                         high_temporal_resolution_info=high_temporal_resolution_info)
 
         # get HRF curve
-        hrf_curve = cls.get_hrf_curve(cfg)
+        hrf_curve = cls.get_hrf_curve(cfg, stimulus)
+        GemWriteToFile.get_instance().write_array_to_h5(hrf_curve, variable_path=['hrf'], append_to_existing_variable=False)
 
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
         stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=hrf_curve)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.resampled_data, variable_path=['stimulus', 'resampled_data'], append_to_existing_variable=False)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.stimulus_data_cpu, variable_path=['stimulus', 'stimulus_data_hrf_convolved'], append_to_existing_variable=False)
 
         return stimulus
         
@@ -138,6 +156,7 @@ class GEMpRFAnalysis:
     def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
         # model signals
         S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
+        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
 
         # model derivatives signals
         dS_dtheta_batches_list = []
@@ -146,6 +165,7 @@ class GEMpRFAnalysis:
             for theta_idx in range(num_theta):
                 dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
                 dS_dtheta_batches_list.append(dS_dtheta_batches)
+                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
@@ -272,6 +292,12 @@ class GEMpRFAnalysis:
 
         # process bathches
         Y_signals_cpu = Y_signals_cpu[:, None] if Y_signals_cpu.ndim == 1 else Y_signals_cpu # in case only one signal is present
+
+        # exit if number of timepoints in y-signals and stimulus do not match
+        if Y_signals_cpu.shape[0] != stimulus.NumFrames:
+            Logger.print_red_message(f"Number of timepoints in measured fMRI data ({Y_signals_cpu.shape[0]}) and stimulus ({stimulus.NumFrames}) do not match for file: {measured_data_filepath}", print_file_name=False)
+            sys.exit(1)
+
         total_y_signals = Y_signals_cpu.shape[1]
         num_batches = int(cfg.measured_data["batches"])
         batch_size = max(1, int(total_y_signals / num_batches)) # to deal with the situation of only one y_signal, which will result in batch_size = 0
@@ -549,6 +575,8 @@ class GEMpRFAnalysis:
             Logger.print_red_message("No data files found. Exiting...", print_file_name=False)
             return
 
+        GemWriteToFile.get_instance().write_array_to_h5(np.array(measured_data_list), variable_path=['input_data', 'measured_data_list'], append_to_existing_variable=False)
+
         # stimulus
         stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.stimulus['task'])
         stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
@@ -560,8 +588,10 @@ class GEMpRFAnalysis:
             MpInv_thread.start()
 
         #...get Orthogonalization matrix
-        ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=stimulus.NumFrames)
+        ortho_matrix_dim = stimulus.NumFrames if (not stimulus.HighTemporalResolutionEnabled) else stimulus.NumFramesDownsampled
+        ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=ortho_matrix_dim)
         O_gpu = ortho_matrix.get_orthogonalization_matrix() # (cp.eye(stim_frames)  - cp.dot(R_gpu, R_gpu.T))
+        GemWriteToFile.get_instance().write_array_to_h5(O_gpu, variable_path=['model', 'orthogonalization_matrix'], append_to_existing_variable=False)
 
 
         #...compute Model Signals
