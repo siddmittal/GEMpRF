@@ -278,9 +278,4 @@ class SignalSynthesizer:
                     else:
                         (orthonormalized_derivatives_signals_batches_list[theta]).append(dS_prime_dtheta_batch_cm_gpu) # column major
 
-        # Write debug info
-        GemWriteToFile.get_instance().write_array_to_h5(S_prime_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
-        for theta_idx in range(num_theta_params):
-            GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_derivatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
-
         return S_prime_batches, orthonormalized_derivatives_signals_batches_list

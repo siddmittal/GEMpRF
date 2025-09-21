@@ -155,8 +155,7 @@ class GEMpRFAnalysis:
     @classmethod    
     def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
         # model signals
-        S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)            
-        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
+        S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)
 
         # model derivatives signals
         dS_dtheta_batches_list = []
@@ -171,6 +170,12 @@ class GEMpRFAnalysis:
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
                                                                                                                                         model_signals_rm_batches= S_batches, 
                                                                                                                                         dS_dtheta_rm_batches_list = dS_dtheta_batches_list)
+        # Write debug info
+        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
+        GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
+        for theta_idx in range(len(orthonormalized_dervatives_signals_batches_list)):
+            GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+
 
         return orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list    
 
