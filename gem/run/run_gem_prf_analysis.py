@@ -615,7 +615,7 @@ class GEMpRFAnalysis:
             MpInv_thread.join()
             if not result_queue.empty():
                 arr_2d_location_inv_M_cpu = result_queue.get()
-            Logger.print_green_message(f"Time taken to compute M-inverse matrix: {datetime.datetime.now() - inv_mat_join_start_time}", print_file_name=False)
+            Logger.print_green_message(f"Time taken to compute M-inverse matrix: {datetime.datetime.now() - inv_mat_join_start_time}\n", print_file_name=False)
 
         # # end time
         # end_time = time.time()

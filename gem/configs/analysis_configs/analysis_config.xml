@@ -25,18 +25,18 @@
     <binarization enable="False" threshold="0"/> <!-- stimulus will be binarized if enabled, all values above threshold will be set to 1 and below to 0 -->	
     
     <!-- Compute model signals with high-res stimulus then downsample: "num_frames_downsampled" = your fMRI timecourse length, "slice_time_ref" for details see https://www.alivelearn.net/?p=1037 -->
-    <high_temporal_resolution enable="true" num_frames_downsampled="240" slice_time_ref="0.5"/>
+    <high_temporal_resolution enable="false" num_frames_downsampled="240" slice_time_ref="0.5"/>
   </stimulus>
 
   <!-- Input Data -->
   <input_datasrc>    
-    <BIDS enable="True" run_type="concatenated"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
+    <BIDS enable="True" run_type="individual"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
       <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS</basepath>
       <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- specify if the "analysis-xx"  -->          
       <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
 
       <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
-      <results_anaylsis_id overwrite="False">24_TestAnalaysisResults</results_anaylsis_id>
+      <results_anaylsis_id overwrite="False">GEMpRF</results_anaylsis_id>
             
       <!-- 
         NOTE: Case sensitive, provide the exact values!!!
@@ -45,13 +45,13 @@
         Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
       -->
       <analysis>01</analysis>
-      <sub>001</sub>
+      <sub>001, 002</sub>
       <hemi>all</hemi>
 
       <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
-        <ses>001nn</ses> <!-- comma separated values or specify "all" -->
-        <run>01</run> <!-- comma separated values or specify "all" -->
+        <ses>001nn</ses> <!-- comma separated values or specify "all" -->        
+        <run>01, 02</run> <!-- comma separated values or specify "all" -->
       </individual>
 
       <!--CONCATENATED Analysis-->
@@ -85,14 +85,14 @@
 
   <!-- Analysis Model -->
   <pRF_model>    
-    <model>2d_gaussian</model> <!-- 2d_gauss, DoG, CSS -->
+    <model>2d_gaussian</model> <!-- 2d_gauss, (DoG, CSS not avaiable at the moment) -->
   </pRF_model>
 
   <!-- Measured data section -->
   <measured_data>
     <width>101</width>
     <height>101</height>
-    <batches>4</batches>    
+    <batches>200</batches>    
   </measured_data>
 
   <!-- GPU configuration -->

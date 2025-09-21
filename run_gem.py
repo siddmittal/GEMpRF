@@ -3,7 +3,7 @@
 "@Author  :   Siddharth Mittal",
 "@Version :   1.0",
 "@Contact :   siddharth.mittal@meduniwien.ac.at",
-"@License :   (C)Copyright 2024, Medical University of Vienna",
+"@License :   (C)Copyright 2024-2025, Medical University of Vienna",
 "@Desc    :   None",
 
 """
@@ -46,7 +46,7 @@ def main():
     # Start the analysis
     start_time = datetime.datetime.now()
     run()  # can access args.config_filepath if needed inside run()
-    print(f"Complete Time taken: {datetime.datetime.now() - start_time}")
+    print(f"\nComplete Time taken: {datetime.datetime.now() - start_time}")
 
 if __name__ == "__main__":
     main()
