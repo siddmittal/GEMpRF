@@ -166,6 +166,17 @@ class ConfigurationWrapper:
             "max_sigma": float
         })
 
+        # default hrf
+        cls.default_hrf = cls.parse_attrs(cls.search_space.get("default_hrf"), {
+            "t": lambda v: tuple(map(float, v.strip("()").split(","))),  # expects a string like "(0, 45, 1)"
+            "peak_delay": float,
+            "under_shoot_delay": float,
+            "peak_disp": float,
+            "under_disp": float,
+            "peak_to_undershoot": float,
+            "normalize": lambda v: v.lower() == "true"
+        })
+
         print("Successfully read the config file. ")
         if cls.optional_analysis_params['enable']:
             print(f"Analysis params from file: {', '.join(k for k,v in cls.optional_analysis_params.items() if isinstance(v, dict) and v.get('use_from_file', False)) or 'None'}")

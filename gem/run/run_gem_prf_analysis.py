@@ -66,15 +66,15 @@ class GEMpRFAnalysis:
                 Logger.print_red_message(f"Could not load HRF curve from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['hrf']['key']}", print_file_name=False)
                 sys.exit(1)
         else:
-            if stimulus.HighTemporalResolutionEnabled:
-                hrf_t_length = math.ceil(stimulus.NumFrames * 0.10)
-                hrf_t = np.linspace(0, 30 , hrf_t_length)
-                hrf_curve = spm_hrf_compat(hrf_t)                
-            else:    
-                hrf_t = np.arange(0, 31, 1) # np.linspace(0, 30, 31)
-                # hrf_curve = spm_hrf_compat(hrf_t)
-                hrf_curve = np.array([0, 0.0055, 0.1137, 0.4239, 0.7788, 0.9614, 0.9033, 0.6711, 0.3746, 0.1036, -0.0938, -0.2065, -0.2474, -0.2388, -0.2035, -0.1590, -0.1161, -0.0803, -0.0530, -0.0336, -0.0206, -0.0122, -0.0071, -0.0040, -0.0022, -0.0012, -0.0006, -0.0003, -0.0002, -0.0001, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000, -0.0000]) # mrVista Values    
-
+            # generate HRF curve using SPM parameters
+            hrf_params = (np.arange(*cfg.default_hrf["t"]),
+                          cfg.default_hrf["peak_delay"], 
+                          cfg.default_hrf["under_shoot_delay"], 
+                          cfg.default_hrf["peak_disp"], 
+                          cfg.default_hrf["under_disp"], 
+                          cfg.default_hrf["peak_to_undershoot"], 
+                          cfg.default_hrf["normalize"])
+            hrf_curve = spm_hrf_compat(*hrf_params)
         return hrf_curve
 
     @classmethod
