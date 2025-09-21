@@ -117,33 +117,9 @@ def run_selected_program(selected_program, config_filepath):
     if selected_program == SelectedProgram.GEMAnalysis:             
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
         
-
-def wm():
-    Logger.print_yellow_message("""
-        ============================================================
-        GEM pRF Analysis - Unreleased Version for Testing Only
-        ============================================================
-
-        @Author   : Siddharth Mittal
-        @Version  : 1.0
-        @Contact  : siddharth.mittal@meduniwien.ac.at
-        @License  : (C) Copyright 2024, Medical University of Vienna
-
-        WARNING:
-        This is an unreleased version for testing purposes.
-        Its distribution is strictly prohibited.
-
-        ============================================================
-    """, 
-    print_file_name=False)
-
-
-
 ################################################---------------------------------MAIN---------------------------------################################################
 # run the main function
 def run():      
-    wm()
-          
     # NOTE: Select the program to run
     # selected_program = SelectedProgram.GEMAnalysis
     selected_program = SelectedProgram.GEMAnalysis
