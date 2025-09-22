@@ -42,7 +42,7 @@ class GridFit:
         # compute total signals present across all the batches
         total_model_signals = 0
         for i in range(num_batches):
-            total_model_signals = total_model_signals + S_prime_cm_gpu_batches[i].shape[1] # i.e.  number of columns: bacuse each signal is present across a single column
+            total_model_signals = total_model_signals + S_prime_cm_gpu_batches[i].shape[1] # i.e.  number of columns: because each signal is present across a single column
 
         # allocate memory to hold results on default device
         with cp.cuda.Device(default_gpu_id):
@@ -162,6 +162,33 @@ class GridFit:
 
                 return best_fit_proj_cpu, e_cpu, cp.asnumpy(de_dtheta_3darr_gpu)
                 
+    @classmethod
+    # NOTE: There is one more similar function below called "get_only_error_terms()". It is from the main branch for pRF estimantion (i.e. no simulations)
+    # Note: all ORTHOGONALIZED signals "S" are assumed along Columns    
+    def get_error_terms_only(cls, isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, isSimulations = False):
+        e_cpu = None
+        # nomalization of signals/timecourses (present along the columns)
+
+        # all in one
+        e_gpu, _ = cls._get_error_terms_from_batches(isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_gpu_batches_list = None) # Only error terms are computed
+                
+        # best fit
+        # best_fit_proj_cpu = np.nanargmax(cp.asnumpy(e_gpu), axis=1) #cls._compute_best_projection_fit(e_gpu)
+        best_fit_proj_cpu = cp.asnumpy(cp.nanargmax(e_gpu, axis=1))
+    
+        ###---return results on CPU or GPU
+        if not isSimulations:
+            # GPU result
+            if isResultOnGPU:
+                return cp.asarray(best_fit_proj_cpu), e_gpu
+            
+            # CPU result
+            else:            
+                best_fit_proj_cpu = cp.asnumpy(best_fit_proj_cpu)
+                e_cpu = cp.asnumpy(e_gpu)
+                            
+        return best_fit_proj_cpu, e_cpu  
+
     @classmethod
     # Note: all ORTHOGONALIZED signals "S" are assumed along Columns
     def get_only_error_terms(cls, isResultOnGPU, Y_signals_gpu, S_prime_cm_batches_gpu, dS_prime_dtheta_cm_batches_list_gpu): # NOTE: "dS_prime_dtheta_cm_batches_list_gpu" is placed to maintain same signature as "get_error_terms"

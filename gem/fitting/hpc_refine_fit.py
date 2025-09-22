@@ -268,6 +268,7 @@ class RefineFit:
                 if(ONLY_SIGNLE_SIGNAL):     
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, block_flat_indices].T)[0]))
                 else:
+                    de_dtheta_vec = de_dtheta_list_cpu[theta, y_idx, block_flat_indices]
                     vec = np.vstack((vec, (de_dtheta_list_cpu[theta, y_idx, block_flat_indices].T)[0]))
 
             vec = vec[:, non_NaN_e_row_indices]

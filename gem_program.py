@@ -86,11 +86,17 @@ def run_selected_program(selected_program, config_filepath):
         if os.path.exists(result_dir) and cfg.bids["results_anaylsis_id"].get("@overwrite").lower() == "false":
             shutil.move(result_dir, f'{result_dir}_backup-{datetime.datetime.now():%Y%m%d-%H%M%S}')
         shutil.copy(config_filepath, result_dir) if os.makedirs(result_dir, exist_ok=True) is None else None
+    elif selected_program == SelectedProgram.GEMSimulations:
+        result_dir = os.path.join(cfg.simulation.get("simulated_results_dir"))
+        shutil.copy(config_filepath, result_dir) if os.makedirs(result_dir, exist_ok=True) is None else None
 
     # ...prf spatial points
     if spatial_points_xy is None:
         if selected_program == SelectedProgram.GEMAnalysis:
             spatial_points_yx = GEMpRFAnalysis.get_prf_spatial_points(cfg) # this will return the spatial points in (row/y, col/x) format
+        elif selected_program == SelectedProgram.GEMSimulations:
+            from raven.simulation.run.run_gem_simulations import GEMSimulationsRunner
+            spatial_points_yx = GEMSimulationsRunner.get_prf_spatial_points(cfg)
 
         # convert spatial points from (row, col) to (col, row)
         spatial_points_xy = spatial_points_yx
@@ -104,6 +110,8 @@ def run_selected_program(selected_program, config_filepath):
     # additional dimensions
     if selected_program == SelectedProgram.GEMAnalysis:
         additional_dimensions = GEMpRFAnalysis.get_additional_dimensions(cfg, selected_prf_model)
+    elif selected_program == SelectedProgram.GEMSimulations:
+        additional_dimensions = GEMSimulationsRunner.get_additional_dimensions(cfg, selected_prf_model)
         
     prf_space = PRFSpace(spatial_points_xy, additional_dimensions=additional_dimensions)
     prf_space.convert_spatial_to_multidim()
@@ -116,13 +124,15 @@ def run_selected_program(selected_program, config_filepath):
     # run the pRF analysis
     if selected_program == SelectedProgram.GEMAnalysis:             
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
+    elif selected_program == SelectedProgram.GEMSimulations:
+        GEMSimulationsRunner.run(cfg, prf_model, prf_space)
         
 ################################################---------------------------------MAIN---------------------------------################################################
 # run the main function
 def run():      
     # NOTE: Select the program to run
     # selected_program = SelectedProgram.GEMAnalysis
-    selected_program = SelectedProgram.GEMAnalysis
+    selected_program = SelectedProgram.GEMSimulations
 
     print ("Running the GEM pRF Analysis...")
     # from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
@@ -139,7 +149,7 @@ def run():
         config_filepath = sys.argv[1]
         has_user_provided_config = True
         if selected_program == SelectedProgram.GEMSimulations:
-            pass
+            from raven.simulation.run.run_gem_simulations import GEMSimulationsRunner        
     except IndexError:
         pass
 
@@ -147,7 +157,21 @@ def run():
     if not has_user_provided_config:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         if selected_program == SelectedProgram.GEMSimulations:
-            pass
+            from raven.simulation.run.run_gem_simulations import GEMSimulationsRunner
+            # NOTE: KDE computation Configs
+            config_filepath = os.path.join(script_dir, 'raven', 'configs', 'simulations_configs', '0002_kde_generation-voxel-394-specific_config.xml')
+            # config_filepath = os.path.join(script_dir, '..', 'configs', 'simulations_configs', '0001_kde_generation_config.xml') # simulations_config.xml # david_001_hcp_stimuli_simulations_config # 0001_kde_generation_config
+            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-001a_dataset-hcpret_task-bars_purpose-stimulicomparison_remarks-david.xml')
+            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-002a_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml')
+            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-003a_dataset-hcpret_task-barwedgering_purpose-stimulicomparison_remarks-david.xml')
+            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'ohbmBar_simulations_config_david_ohbm_simulations_wedge-bar.xml')
+            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'ohbmWedge_simulations_config_david_ohbm_simulations_wedge-bar.xml')
+            config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-002b_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml')
+
+            # NOTE: Stimuli Comparison Configs
+            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-001_dataset-hcpret_task-bars_purpose-stimulicomparison_remarks-david.xml') 
+            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-002_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml') 
+            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-003_dataset-hcpret_task-barwedgering_purpose-stimulicomparison_remarks-david.xml')     
         elif selected_program == SelectedProgram.GEMAnalysis:
             # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config - VerifyChanges.xml')
             # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config_retcomp17BIDS_wedgeLR-VerfiyDefaultGPU.xml')

@@ -242,6 +242,9 @@ class SignalSynthesizer:
         if dS_dtheta_rm_batches_list is not None:
             num_theta_params = len(dS_dtheta_rm_batches_list)
             orthonormalized_derivatives_signals_batches_list = [None] * num_theta_params
+        else: # i.e. none
+            num_theta_params = 0
+            orthonormalized_derivatives_signals_batches_list = [None]
 
         # orthonormalize: model signal
         for batch_idx in range(len(model_signals_rm_batches)):

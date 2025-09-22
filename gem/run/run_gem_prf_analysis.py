@@ -75,6 +75,7 @@ class GEMpRFAnalysis:
                           cfg.default_hrf["peak_to_undershoot"], 
                           cfg.default_hrf["normalize"])
             hrf_curve = spm_hrf_compat(*hrf_params)
+        hrf_curve /= hrf_curve.sum()
         return hrf_curve
 
     @classmethod
@@ -153,18 +154,23 @@ class GEMpRFAnalysis:
         return cls.__selected_prf_model
 
     @classmethod    
-    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
+    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg, isSimulations = False):
         # model signals
         S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)
+        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
+
+        orthonormalized_dervatives_signals_batches_list = None
+        dS_dtheta_batches_list = None
 
         # model derivatives signals
-        dS_dtheta_batches_list = []
-        if cfg.refine_fitting_enabled:
-            num_theta = prf_model.num_dimensions
-            for theta_idx in range(num_theta):
-                dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
-                dS_dtheta_batches_list.append(dS_dtheta_batches)
-                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+        if not isSimulations:
+            dS_dtheta_batches_list = []
+            if cfg.refine_fitting_enabled:
+                num_theta = prf_model.num_dimensions
+                for theta_idx in range(num_theta):
+                    dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
+                    dS_dtheta_batches_list.append(dS_dtheta_batches)
+                    GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
@@ -286,14 +292,43 @@ class GEMpRFAnalysis:
         return refined_matching_results_XY
 
     @classmethod
-    def get_pRF_estimations(cls, cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_filepath):
+    def get_pRF_estimations_gridfit_only(cls, cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, Y_signals_cpu, isRefinedEstimationON = True, isSimulations=False):
+        coarse_pRF_estimations_points_XY = None
+
+        # process bathches
+        total_y_signals = Y_signals_cpu.shape[1]
+        num_batches = int(cfg.measured_data["batches"])
+        batch_size = int(total_y_signals / num_batches)
+        for current_batch_idx in range(0, total_y_signals, batch_size):
+            Y_signals_batch_gpu = cp.asarray(Y_signals_cpu[:, current_batch_idx: current_batch_idx + batch_size])
+
+            # error
+            # prf_analysis.error_e = (Y_signals_batch_gpu.T @ dS_prime_dtheta_columnmajor_gpu)
+            best_fit_proj_cpu, e_cpu = GridFit.get_error_terms_only(isResultOnGPU=False, 
+                                                                Y_signals_gpu=Y_signals_batch_gpu, 
+                                                                S_prime_cm_batches_gpu=prf_analysis.orthonormalized_S_batches, 
+                                                                isSimulations=isSimulations)
+            coarse_pRF_estimations_batch = prf_space.multi_dim_points_cpu[best_fit_proj_cpu]
+            # Logger.print_green_message(f"error computed for batch {current_batch_idx} - {current_batch_idx + min(batch_size, total_y_signals-current_batch_idx) }...", print_file_name=False)
+
+            # concatenate the batch results
+            if current_batch_idx == 0:
+                coarse_pRF_estimations_points_XY = coarse_pRF_estimations_batch
+            else:
+                coarse_pRF_estimations_points_XY = np.concatenate((coarse_pRF_estimations_points_XY, coarse_pRF_estimations_batch), axis = 0)                          
+
+        return coarse_pRF_estimations_points_XY
+
+    @classmethod
+    def get_pRF_estimations(cls, cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_filepath, Y_signals_cpu = None, isSimulation = False):
         valid_refined_prf_points_XY = None
         r2_results = None
         valid_refined_S_cpu = None
 
          # y-signals
-        y_data = ObservedData(data_source=DataSource.measured_data)
-        Y_signals_cpu = y_data.get_y_signals(measured_data_filepath)
+        if Y_signals_cpu is None:
+            y_data = ObservedData(data_source=DataSource.measured_data)
+            Y_signals_cpu = y_data.get_y_signals(measured_data_filepath)
 
         # process bathches
         Y_signals_cpu = Y_signals_cpu[:, None] if Y_signals_cpu.ndim == 1 else Y_signals_cpu # in case only one signal is present
@@ -349,20 +384,24 @@ class GEMpRFAnalysis:
                 valid_refined_prf_points_XY_batch = coarse_pRF_estimations
 
             # compute timecourses for refined pRF estimated params
-            valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus, cfg)
+            if not isSimulation:
+                valid_refined_S_cpu_batch = GEMpRFAnalysis.get_refined_signals_cpu(valid_refined_prf_points_XY_batch, prf_model, stimulus, cfg)
 
             # compute Variance Explained
-            r2_results_batch = R2.get_r2_num_den_method_with_epsilon_as_yTs(Y_signals_batch_gpu, O_gpu, valid_refined_prf_points_XY_batch, valid_refined_S_cpu_batch).reshape(-1, 1)
+            if not isSimulation:
+                r2_results_batch = R2.get_r2_num_den_method_with_epsilon_as_yTs(Y_signals_batch_gpu, O_gpu, valid_refined_prf_points_XY_batch, valid_refined_S_cpu_batch).reshape(-1, 1)
 
             # concatenate the batch results
             if current_batch_idx == 0:
                 valid_refined_prf_points_XY = valid_refined_prf_points_XY_batch
-                valid_refined_S_cpu = valid_refined_S_cpu_batch
-                r2_results = r2_results_batch
+                if not isSimulation:
+                    valid_refined_S_cpu = valid_refined_S_cpu_batch
+                    r2_results = r2_results_batch
             else:
-                valid_refined_prf_points_XY = np.concatenate((valid_refined_prf_points_XY, valid_refined_prf_points_XY_batch), axis = 0)                    
-                valid_refined_S_cpu = np.concatenate((valid_refined_S_cpu, valid_refined_S_cpu_batch), axis = 0)
-                r2_results = np.concatenate((r2_results, r2_results_batch), axis = 0)            
+                valid_refined_prf_points_XY = np.concatenate((valid_refined_prf_points_XY, valid_refined_prf_points_XY_batch), axis = 0)        
+                if not isSimulation:            
+                    valid_refined_S_cpu = np.concatenate((valid_refined_S_cpu, valid_refined_S_cpu_batch), axis = 0)
+                    r2_results = np.concatenate((r2_results, r2_results_batch), axis = 0)            
 
         return valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu
 
@@ -570,6 +609,42 @@ class GEMpRFAnalysis:
         print
 
     @classmethod
+    def get_init_params(cls, cfg, prf_space, prf_model, isSimulations = False):
+        # stimulus
+        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.stimulus['task'])
+        stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
+
+        # M-Matrix
+        if not isSimulations:
+            result_queue = queue.Queue()
+            MpInv_thread = threading.Thread(target=cls.execute_Grids2MpInv_NewMethod, args=(prf_space, result_queue))
+            MpInv_thread.start()
+
+        #...get Orthogonalization matrix
+        ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=stimulus.NumFrames)
+        O_gpu = ortho_matrix.get_orthogonalization_matrix() # (cp.eye(stim_frames)  - cp.dot(R_gpu, R_gpu.T))
+
+
+        #...compute Model Signals
+        prf_analysis = PRFAnalysis(prf_space=prf_space, stimulus=stimulus) # to hold all the information about this analysis run,  # NOTE: PRFAnalysis class will be helpful for the concatenation runs, where you can store the results with different stimulus in corresponding objects (i.e. prf_analysis)                              
+        prf_analysis.orthonormalized_S_batches, prf_analysis.orthonormalized_dS_dtheta_batches_list = cls.compute_orthonormalized_signals(O_gpu=O_gpu, 
+                                                                                                                                    prf_space= prf_space, 
+                                                                                                                                    prf_model= prf_model, 
+                                                                                                                                    stimulus= stimulus, 
+                                                                                                                                    cfg = cfg,
+                                                                                                                                    isSimulations=isSimulations)  
+        Logger.print_green_message("model signals computed...", print_file_name=False)
+
+        arr_2d_location_inv_M_cpu = None
+        if not isSimulations:
+            # get M-inverse matrix
+            MpInv_thread.join()
+            if not result_queue.empty():
+                arr_2d_location_inv_M_cpu = result_queue.get()
+
+        return stimulus, O_gpu, prf_analysis, arr_2d_location_inv_M_cpu 
+
+    @classmethod
     def individual_run(cls, cfg, prf_model, prf_space):
         # time
         start_time = time.time()
@@ -626,8 +701,6 @@ class GEMpRFAnalysis:
         # pRF Estimations                
         file_processed_counter = 1             
         data_src = []             
-        # data_idx = 0  
-        # for i in range(10):
         for data_idx in range(len(measured_data_list)):
             # check if input file exists
             if not os.path.exists(measured_data_list[data_idx]):
@@ -637,11 +710,6 @@ class GEMpRFAnalysis:
             start_time = time.time()
             Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
             valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu = GEMpRFAnalysis.get_pRF_estimations(cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_list[data_idx])
-            # profiler.disable()
-            # stats = pstats.Stats(profiler, stream=profile_stream)
-            # stats.strip_dirs().sort_stats("cumulative").print_stats(20)  # Top 20 most time-consuming calls
-            # print(profile_stream.getvalue())
-
 
             # format results to JSON                
             # json_data = R2.format_in_json_format( r2_results, valid_refined_prf_points_XY, valid_refined_S_cpu)   # NOTE: use this line if you want to print the refined signals in the JSON file
@@ -655,15 +723,13 @@ class GEMpRFAnalysis:
             data_src.append(measured_data_list[data_idx])  
             file_processed_counter += 1
 
-            # end time
-            end_time = time.time()
-            iteration_time = end_time - start_time
+            # # end time
+            # end_time = time.time()
+            # iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
-            print(f"Time taken for this analysis: {iteration_time}")
 
-            # write the time taken for each iteration
-            # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\v2_iteration_times_151x151x16.csv"
-            # csv_filepath = r"/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paper-simulated-data/analysis/05/BIDS/derivatives/time_records/v2_iteration_times_151x151x16--RefinefitScipy.csv"
+            # # write the time taken for each iteration
+            # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\iteration_times_151x151x16.csv"
             # df = pd.DataFrame({'DataSrc': data_src, 'Time (seconds)': iteration_times})
             # df.to_csv(csv_filepath, index=False)
         print ("All files processed...")

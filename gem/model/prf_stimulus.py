@@ -24,7 +24,7 @@ class Stimulus:
         script_directory = os.path.dirname(os.path.abspath(__file__))
         stimulus_file_path = os.path.join(script_directory, relative_file_path)
         stimulus_img = nib.load(stimulus_file_path)
-        self.size_in_degrees = size_in_degrees
+        self.__size_in_degrees = size_in_degrees
         self.org_data = (stimulus_img.get_fdata()).squeeze()
         if binarize:
             if not np.all(np.isin(self.org_data, [0, 1])):  
@@ -88,6 +88,10 @@ class Stimulus:
     @property
     def SliceTimeRef(self):
         return self.__slice_time_ref
+
+    @property
+    def SizeInVisualFieldDegrees(self):
+        return self.__size_in_degrees
 
     def compute_resample_stimulus_data(self
                                , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])

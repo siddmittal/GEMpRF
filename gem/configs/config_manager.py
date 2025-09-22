@@ -181,6 +181,9 @@ class ConfigurationWrapper:
         if cls.optional_analysis_params['enable']:
             print(f"Analysis params from file: {', '.join(k for k,v in cls.optional_analysis_params.items() if isinstance(v, dict) and v.get('use_from_file', False)) or 'None'}")
 
+        # Simulation
+        cls.simulation = cls.config_data.get("simulation")
+
 # Usage:
 if __name__ == "__main__":
     ConfigurationWrapper.load_configuration(RunType.ANALYSIS)
