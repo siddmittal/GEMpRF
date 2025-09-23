@@ -1,19 +1,17 @@
-# GEM-pRF
-
 Welcome to **GEM-pRF** - a standalone, plug-and-play software for population receptive field (pRF) mapping, designed for **large-scale data analysis with high accuracy**.
 
 
 To understand the theoretical foundations and details of how the software works, please refer to our paper: 👉[Mittal et al (2025), ](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*[GEM-pRF: GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*
 
 
-## 📖 Documentation
+## Documentation
 
 An official documentation is coming soon! Meanwhile, to get the mathematical foundation of the software, you may refer to the [GEM-pRF paper](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1).
 
 
-## 🚀 Installation
+## Installation
 
-GEM-pRF requires the GPU access for the data processing. At the moment, GEM uses CUDA libraries to acess/process data on NVIDIA GPUs. 
+GEM-pRF requires the GPU access for the data processing. At the moment, GEM uses CUDA libraries to acess/process data on NVIDIA GPUs.
 
 > \[!WARNING\]
 >
@@ -41,9 +39,7 @@ cd GEMpRF
 ```
 
 
----
-
-## 🏃🏽‍♂️Running GEM-pRF
+## Running GEM-pRF
 
 
 > \[!CAUTION\]
@@ -52,6 +48,7 @@ cd GEMpRF
 GEM-pRF is written as a **standalone software**. It comes with an XML configuration file. Once you configure your XML file (see [sample config](https://github.com/siddmittal/GEMpRF/blob/main/gem/configs/analysis_configs/analysis_config.xml)), you can directly run the software.
 
 ### 🔹 **Option A: Run from terminal**
+
 
 
 
@@ -66,6 +63,7 @@ GEM-pRF is written as a **standalone software**. It comes with an XML configurat
 
 
 ### 🔹 **Option B: Run from IDE (e.g. VS Code)**
+
 
 
 
