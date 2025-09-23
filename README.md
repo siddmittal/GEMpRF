@@ -6,7 +6,7 @@ To understand the theoretical foundations and details of how the software works,
 
 ## Documentation
 
-An official documentation is coming soon! Meanwhile, to get the mathematical foundation of the software, you may refer to the [GEM-pRF paper](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1).
+An official documentation is coming soon ([GEM-pRF documentation link](https://gemprf.github.io/))! Meanwhile, to get the mathematical foundation of the software, you may refer to the [GEM-pRF paper](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1).
 
 
 ## Installation
