@@ -6,18 +6,12 @@ Welcome to **GEM-pRF** - a standalone, plug-and-play software for population rec
 To understand the theoretical foundations and details of how the software works, please refer to our paper: 👉[Mittal et al (2025), ](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*[GEM-pRF: GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*
 
 
----
-
 ##  📖 Documentation
 
 An official documentation is coming soon! Meanwhile, to get the mathematical foundation of the software, you may refer to the [GEM-pRF paper](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1).
 
 
----
-
 ## 🚀 Installation
-
-GEM-pRF is written as a **standalone plug-and-play software**. It comes with an XML configuration file. Once you configure your XML file (see [sample config](https://github.com/siddmittal/GEMpRF/blob/main/gem/configs/analysis_configs/analysis_config.xml)), you can directly run the software.
 
 ### Step-by-Step Guide
 
@@ -40,18 +34,15 @@ git clone https://github.com/siddmittal/GEMpRF.git
 cd GEMpRF
 ```
 
-
-
 ---
 
 ## Running GEM-pRF
 
 
-:::info
+> [!CAUTION]
 Before proceeding, make sure to install the required python dependencies as specified in the `requirements.txt` file
 
-:::
-
+GEM-pRF is written as a **standalone software**. It comes with an XML configuration file. Once you configure your XML file (see [sample config](https://github.com/siddmittal/GEMpRF/blob/main/gem/configs/analysis_configs/analysis_config.xml)), you can directly run the software.
 
 ### 🔹 **Option A: Run from terminal**
 
