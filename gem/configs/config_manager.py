@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+"@Author  :   Siddharth Mittal",
+"@Version :   1.0",
+"@Contact :   siddharth.mittal@meduniwien.ac.at",
+"@License :   (C)Copyright 2023-2025, Medical University of Vienna",
+"@Desc    :   None",
+
+"""
+
 import json
 import os
 from enum import Enum
@@ -8,27 +18,7 @@ class RunType(Enum):
     SIMULATION = 2
 
 class ConfigurationWrapper:
-    config_data = None  # Class-level attribute to store the configuration data
-
-
-    # # # NOTE: to be deleted once XML works
-    # # @classmethod
-    # # def _read_json_file(cls, run_type: RunType):
-    # #     script_dir = os.path.dirname(os.path.realpath(__file__))  # Get the directory of the script
-        
-    # #     if run_type == RunType.ANALYSIS:
-    # #         config_file_path = os.path.join(script_dir, "analysis_configs", "config.json")  # Construct the path to config.json
-    # #     elif run_type == RunType.SIMULATION:
-    # #         config_file_path = os.path.join(script_dir, "simulation_configs", "config.json")  # Construct the path to config.json
-    # #     else:
-    # #         raise ValueError("Correct configuration cannot be loaded as the configuration type is not correctly passed")
-
-    # #     if os.path.isfile(config_file_path):
-    # #         with open(config_file_path, "r") as config_file:
-    # #             cls.config_data = json.load(config_file)
-    # #     else:
-    # #         print("Config file not found. Make sure it's located in the same directory as the script.")
-
+    config_data = None
 
     @classmethod
     def __read_xml_file(cls, run_type: RunType = None, config_filepath : str = None):
@@ -38,13 +28,6 @@ class ConfigurationWrapper:
             config_file_path = config_filepath
         else:
              config_file_path = os.path.join(script_dir, "default_config", "default_config.xml") # default config file path
-
-        # # if run_type == RunType.ANALYSIS:
-        # #     config_file_path = os.path.join(script_dir, "analysis_configs", "config.xml")  # Construct the path to config.xml
-        # # elif run_type == RunType.SIMULATION:
-        # #     config_file_path = os.path.join(script_dir, "simulation_configs", "config.xml")  # Construct the path to config.xml
-        # # else:
-        # #     raise ValueError("Correct configuration cannot be loaded as the configuration type is not correctly passed")
 
         if os.path.isfile(config_file_path):
             with open(config_file_path) as xml_file:            
