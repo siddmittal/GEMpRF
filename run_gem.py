@@ -13,7 +13,7 @@ import os
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__name__))))
-from gem_program import run
+from init_setup import run
 import argparse
 
 def main():
