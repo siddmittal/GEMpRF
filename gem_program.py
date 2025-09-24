@@ -117,21 +117,12 @@ def run_selected_program(selected_program, config_filepath):
     if selected_program == SelectedProgram.GEMAnalysis:             
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
         
-################################################---------------------------------MAIN---------------------------------################################################
 # run the main function
 def run():      
     # NOTE: Select the program to run
-    # selected_program = SelectedProgram.GEMAnalysis
     selected_program = SelectedProgram.GEMAnalysis
 
     print ("Running the GEM pRF Analysis...")
-    # from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
-    # GEMpRFAnalysis.run()    
-    # cProfile.run('GEMpRFAnalysis.run()', sort='cumulative')
-
-    # # Run the profiling
-    # profiler = cProfile.Profile()
-    # profiler.enable()
 
     # Check if the user has provided a config filepath
     has_user_provided_config = False
@@ -149,24 +140,9 @@ def run():
         if selected_program == SelectedProgram.GEMSimulations:
             pass
         elif selected_program == SelectedProgram.GEMAnalysis:
-            # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config - VerifyChanges.xml')
-            # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config_retcomp17BIDS_wedgeLR-VerfiyDefaultGPU.xml')
             config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config.xml')
         
-    # GEMSimulationsRunner.run(config_filepath, isSimulation=IS_SIMULATION)
     run_selected_program(selected_program, config_filepath)
-
-    # profiler.disable()
-
-    # # Specify the file name to save the profiling results
-    # output_file = '/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paperD-simulated-data/analysis/05/BIDS/derivatives/prfanalyze-gem/analysis-05/sub-100000/ses-0n0/profiling_results.txt'#
-    # output_file = "/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/simulations/stimuli_comparison/profileing.txt"
-
-    # # Dump the profiling statistics to the specified file
-    # with open(output_file, 'w') as f:
-    #     stats = pstats.Stats(profiler, stream=f)
-    #     stats.sort_stats('cumulative')
-    #     stats.print_stats()
 
 if __name__ == "__main__":
     run()
