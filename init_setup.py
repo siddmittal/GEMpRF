@@ -141,7 +141,12 @@ def run():
             pass
         elif selected_program == SelectedProgram.GEMAnalysis:
             config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config.xml')
-        
+
+    # Simulations are currently not supported on this repository !!!
+    if selected_program == SelectedProgram.GEMSimulations:
+        Logger.print_red_message("Simulations are currently not supported. Please set 'selected_program' to 'GEMAnalysis' in init_setup.py", print_file_name=False)
+        sys.exit(1)        
+
     run_selected_program(selected_program, config_filepath)
 
 if __name__ == "__main__":
