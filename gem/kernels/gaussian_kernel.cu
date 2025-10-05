@@ -45,10 +45,10 @@ extern "C"
 			//printf("Thread: (%d, %d, %d), [ux, uy, sigma]: (%f, %f, %f) curve no.: %d,  currentGaussianCurveStartIdx: %d\n", row, col, frame, x_mean, y_mean, sigma, meanPairIdx, currentGaussianCurveStartIdx);
 
 			int gaussIdx = currentGaussianCurveStartIdx;
-			//printf("Thread: (%d, %d), meanPairIdx: %d,  currentGaussianCurveStartIdx: %d\n", row, col, meanPairIdx, currentGaussianCurveStartIdx);
-			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			//printf("Thread: (%d, %d), meanPairIdx: %d,  currentGaussianCurveStartIdx: %d\n", row, col, meanPairIdx, currentGaussianCurveStartIdx);			
+			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 			{				
-				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
+				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -93,9 +93,9 @@ extern "C"
 
 			int gaussIdx = currentGaussianCurveStartIdx;
 			
-			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 			{
-				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)	
+				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -139,9 +139,9 @@ extern "C"
 
 			int gaussIdx = currentGaussianCurveStartIdx;
 			
-			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 			{
-				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
+				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
@@ -185,9 +185,9 @@ extern "C"
 
 			int gaussIdx = currentGaussianCurveStartIdx;
 			
-			for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
+			for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)
 			{
-				for (int stim_vf_row = 0; stim_vf_row < nStimulusRows; stim_vf_row++)	
+				for (int stim_vf_col = 0; stim_vf_col < nStimulusCols; stim_vf_col++)
 				{
 					double y = stimulus_vf_points_y[stim_vf_row];
 					double x = stimulus_vf_points_x[stim_vf_col];
