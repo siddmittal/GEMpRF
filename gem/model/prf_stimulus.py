@@ -125,17 +125,17 @@ class Stimulus:
         return self.__resampled_hrf_convolved_data        
 
     def __compute_flattened_columnmajor_stimulus_data(self):  ####<----This one is more correct
-        stimulus_flat_data_cpu = self.__resampled_hrf_convolved_data.flatten('F')
+        stimulus_flat_data_cpu = self.__resampled_hrf_convolved_data.flatten('C')
 
         # GPU
         if self.__flattened_columnmajor_stimulus_data_gpu is None:
             stimulus_flat_data_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(stimulus_flat_data_cpu,))
             stim_height, stim_width, stim_frames = self.resampled_data.shape
-            self.__flattened_columnmajor_stimulus_data_gpu = cp.reshape(stimulus_flat_data_gpu, (stim_height * stim_width, stim_frames), order='F') # each column contains a flat stimulus frame
+            self.__flattened_columnmajor_stimulus_data_gpu = cp.reshape(stimulus_flat_data_gpu, (stim_height * stim_width, stim_frames), order='C') # each row contains a flat stimulus frame
 
         # CPU
         if self.__flattened_columnmajor_stimulus_data_cpu is None: 
-            self.__flattened_columnmajor_stimulus_data_cpu = np.reshape(stimulus_flat_data_cpu, (stim_height * stim_width, stim_frames), order='F') # each column contains a flat stimulus frame            
+            self.__flattened_columnmajor_stimulus_data_cpu = np.reshape(stimulus_flat_data_cpu, (stim_height * stim_width, stim_frames), order='C') # each row contains a flat stimulus frame            
             
     def data_shape(self):
         return self.__resampled_hrf_convolved_data.shape
