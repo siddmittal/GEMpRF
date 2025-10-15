@@ -163,14 +163,13 @@ class GEMpRFAnalysis:
         dS_dtheta_batches_list = None
 
         # model derivatives signals
-        if not isSimulations:
-            dS_dtheta_batches_list = []
-            if cfg.refine_fitting_enabled:
-                num_theta = prf_model.num_dimensions
-                for theta_idx in range(num_theta):
-                    dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
-                    dS_dtheta_batches_list.append(dS_dtheta_batches)
-                    GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+        dS_dtheta_batches_list = []
+        if cfg.refine_fitting_enabled:
+            num_theta = prf_model.num_dimensions
+            for theta_idx in range(num_theta):
+                dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
+                dS_dtheta_batches_list.append(dS_dtheta_batches)
+                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
@@ -612,11 +611,11 @@ class GEMpRFAnalysis:
     @classmethod
     def get_init_params(cls, cfg, prf_space, prf_model, isSimulations = False):
         # stimulus
-        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.stimulus['task'])
+        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
         stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
 
         # M-Matrix
-        if not isSimulations:
+        if cfg.refine_fitting_enabled:
             result_queue = queue.Queue()
             MpInv_thread = threading.Thread(target=cls.execute_Grids2MpInv_NewMethod, args=(prf_space, result_queue))
             MpInv_thread.start()
@@ -637,7 +636,7 @@ class GEMpRFAnalysis:
         Logger.print_green_message("model signals computed...", print_file_name=False)
 
         arr_2d_location_inv_M_cpu = None
-        if not isSimulations:
+        if cfg.refine_fitting_enabled:
             # get M-inverse matrix
             MpInv_thread.join()
             if not result_queue.empty():
