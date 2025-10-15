@@ -173,8 +173,9 @@ class GEMpRFAnalysis:
         # Write debug info
         GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
         GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
-        for theta_idx in range(len(orthonormalized_dervatives_signals_batches_list)):
-            GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+        if orthonormalized_dervatives_signals_batches_list is not None:
+            for theta_idx in range(len(orthonormalized_dervatives_signals_batches_list)):
+                GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
 
         return orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list    
