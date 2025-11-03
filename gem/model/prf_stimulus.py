@@ -40,6 +40,7 @@ class Stimulus:
         self.y_range_cpu = np.linspace(-float(stim_config["visual_field"]), +float(stim_config["visual_field"]), int(stim_config["height"]))
         self.x_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.x_range_cpu,))
         self.y_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.y_range_cpu,))
+        self.__header = stimulus_img.header
 
         # high temporal resolution stimulus params
         if high_temporal_resolution_info:
@@ -88,6 +89,10 @@ class Stimulus:
     @property
     def SliceTimeRef(self):
         return self.__slice_time_ref
+
+    @property
+    def Header(self):
+        return self.__header
 
     def compute_resample_stimulus_data(self
                                , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])

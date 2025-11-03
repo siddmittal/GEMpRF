@@ -117,7 +117,7 @@
     </optional_analysis_params>
     
     <!-- if the user wants to generate a rectilinear grid within the GEM-pRF program, specify the default values below. Please NOTE that these values will ONLY be used if their corresponding optional_analysis_params = False -->
-    <default_hrf t="(0, 45, 1)" peak_delay="6.16" under_shoot_delay="12.0" peak_disp="0.85" under_disp="0.82" peak_to_undershoot="2.15" normalize="true"/> <!-- SPM parameters, "t" is fed to np.arange(start, stop, step), set "step" to a lower value in case of high temporal stimulus -->
+    <default_hrf t="(0, 45)" TR="auto" peak_delay="6.16" under_shoot_delay="12.0" peak_disp="0.85" under_disp="0.82" peak_to_undershoot="2.15" normalize="true"/> <!-- SPM parameters, "t" is fed to np.arange(start, stop, step), "step" represents the TR value, set it to a lower value in case of high temporal stimulus. If TR = "auto" then, its value will be read from the stimulus file -->
     <default_spatial_grid visual_field_radius="13.5" num_horizontal_prfs="151" num_vertical_prfs="151"/>
     <default_sigmas num_sigmas="16" min_sigma="0.5" max_sigma="5"/>
   </search_space>

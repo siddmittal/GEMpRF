@@ -66,6 +66,17 @@ class GEMpRFAnalysis:
                 Logger.print_red_message(f"Could not load HRF curve from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['hrf']['key']}", print_file_name=False)
                 sys.exit(1)
         else:
+            # get TR
+            if cfg.default_hrf["TR"] is None:                
+                TR = stimulus.Header['pixdim'][4]  # now we need to get TR from stimulus # assuming 4th dimension is time
+                Logger.print_yellow_message(f"Setting HRF 't' step value to stimulus TR: {TR} seconds.", print_file_name=False)
+                cfg.default_hrf["t"] = (*cfg.default_hrf["t"][:2], TR)
+            else:
+                TR = cfg.default_hrf["TR"]
+            
+            # spm "t" (start, stop, step/TR)
+            cfg.default_hrf["t"] = (*cfg.default_hrf["t"], TR)
+
             # generate HRF curve using SPM parameters
             hrf_params = (np.arange(*cfg.default_hrf["t"]),
                           cfg.default_hrf["peak_delay"], 
