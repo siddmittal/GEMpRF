@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "BSD 3-Clause License" }
 authors = [
-  { name = "Siddharth Mittal", email = "" }
+  { name = "Siddharth Mittal", email = "siddharth.mittal@meduniwien.ac.at" }
 ]
 dependencies = [
   "h5py==3.13.0",

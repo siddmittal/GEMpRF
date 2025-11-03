@@ -54,3 +54,10 @@ codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v
 *.pkl
 /codebase-cpp/fmri-hpc/x64/Debug
 /gem/space/__pycache__
+dist/gemprf-0.1.0-py3-none-any.whl
+dist/gemprf-0.1.0.tar.gz
+gemprf.egg-info/dependency_links.txt
+gemprf.egg-info/PKG-INFO
+gemprf.egg-info/requires.txt
+gemprf.egg-info/SOURCES.txt
+gemprf.egg-info/top_level.txt
