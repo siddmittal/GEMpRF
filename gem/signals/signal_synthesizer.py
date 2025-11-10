@@ -223,10 +223,10 @@ class SignalSynthesizer:
                                                  \nPlease check your config file (high_temporal_resolution) and/or stimulus.", print_file_name=False)
                         sys.exit(1)
                     
-
-                    step_size = signal_rowmajor_batch_current_gpu.shape[1] // stimulus.NumFramesDownsampled  # only interested in changing the length of the signal
-                    first_sample_point = int(math.floor(stimulus.SliceTimeRef * step_size))
-                    signal_rowmajor_batch_current_gpu = signal_rowmajor_batch_current_gpu[:, first_sample_point::step_size] # plt.plot(cp.asnumpy(signal_rowmajor_batch_current_gpu[0])[0, :])   
+                    idx = np.linspace(0, signal_rowmajor_batch_current_gpu.shape[1], stimulus.NumFramesDownsampled, endpoint=False, dtype=int)
+                    slice_time_ref_adjusted_step_size = (np.diff(idx).mean() * stimulus.SliceTimeRef).round().astype(int)
+                    idx_adj = (idx + slice_time_ref_adjusted_step_size).astype(int)
+                    signal_rowmajor_batch_current_gpu = signal_rowmajor_batch_current_gpu[:, idx_adj] # plt.plot(cp.asnumpy(signal_rowmajor_batch_current_gpu[0])[0, :])
 
                 result_batches.append(signal_rowmajor_batch_current_gpu)
                 num_signals_computed += len(signal_rowmajor_batch_current_gpu)

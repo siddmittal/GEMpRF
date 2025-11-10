@@ -311,7 +311,7 @@ class GEMpRFAnalysis:
         Y_signals_cpu = Y_signals_cpu[:, None] if Y_signals_cpu.ndim == 1 else Y_signals_cpu # in case only one signal is present
 
         # exit if number of timepoints in y-signals and stimulus do not match
-        if Y_signals_cpu.shape[0] != stimulus.NumFrames:
+        if Y_signals_cpu.shape[0] != (stimulus.NumFrames, stimulus.NumFramesDownsampled)[stimulus.HighTemporalResolutionEnabled]:
             Logger.print_red_message(f"Number of timepoints in measured fMRI data ({Y_signals_cpu.shape[0]}) and stimulus ({stimulus.NumFrames}) do not match for file: {measured_data_filepath}", print_file_name=False)
             sys.exit(1)
 
