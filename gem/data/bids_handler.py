@@ -4,7 +4,7 @@
 "@Author  :   Siddharth Mittal",
 "@Version :   1.0",
 "@Contact :   siddharth.mittal@meduniwien.ac.at",
-"@License :   (C)Copyright 2024, Medical University of Vienna",
+"@License :   (C)Copyright 2024 - 2025, Medical University of Vienna",
 "@Desc    :   None",
         
 """
@@ -146,6 +146,7 @@ class GemBidsHandler:
         else:
             individual_item = bids_config.get("individual")
             input_src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, individual_item, stimuli_dir_path, is_individual_run=True)
+            input_src_files = sorted(input_src_files, key=lambda x: (x[0], x[1]['sub'], x[1]['ses'], x[1]['run']))
 
         return input_src_files
     

@@ -197,7 +197,7 @@ class GEMpRFAnalysis:
         measured_data_list = None
         if cfg.bids['@enable'] == "True":
             measured_data_info_list = GemBidsHandler.get_input_filepaths(bids_config=cfg.bids, stimuli_dir_path= cfg.stimulus['directory'])
-            measured_data_list = [data[0] for data in measured_data_info_list]        
+            measured_data_list = (lambda x: np.array(x)[:, 0] if x else np.array([]))(measured_data_info_list)  # extract only filepaths from the list of tuples
         else:
             measured_data_list = cfg.fixed_paths['measured_data_filepath']['filepath']
             if isinstance(measured_data_list, str):
