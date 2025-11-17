@@ -9,7 +9,6 @@ description = "A Python library for population receptive field (pRF) analysis"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "BSD 3-Clause License" }
-include-package-data = true  # enable MANIFEST.in support otherwise package won't be .ptx, .cu, .xml, .h5 files
 authors = [
   { name = "Siddharth Mittal", email = "siddharth.mittal@meduniwien.ac.at" }
 ]
@@ -30,6 +29,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://gemprf.github.io/"
+
+[tool.setuptools]
+include-package-data = true  # enable MANIFEST.in support otherwise package won't be .ptx, .cu, .xml, .h5 files
 
 [tool.setuptools.packages.find]
 exclude = [
