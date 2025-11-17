@@ -30,7 +30,14 @@ def run(config_filepath=None):
 
     # Start the analysis
     start_time = datetime.datetime.now()
-    from init_setup import init_setup
+
+    try:
+        # When run as a package: python -m gem.run_gem
+        from .init_setup import init_setup
+    except ImportError:
+        # When run directly: python run_gem.py
+        from init_setup import init_setup
+
     init_setup(config_filepath=config_filepath)
     print(f"\nComplete Time taken: {datetime.datetime.now() - start_time}")
     sys.exit(0)

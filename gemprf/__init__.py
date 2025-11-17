@@ -1,5 +1,7 @@
-# Import everything from the real gem package
-from gem import *
+import sys
+import importlib
 
-# currently released version information
-__version__ = "0.1.2"
+_real_gem = importlib.import_module("gem")
+_real_gem.__gemprf_version__ = "0.1.3" 
+
+sys.modules[__name__] = _real_gem
