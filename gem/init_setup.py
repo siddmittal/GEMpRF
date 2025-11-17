@@ -9,7 +9,7 @@
 """
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import shutil
 from enum import Enum
@@ -118,37 +118,19 @@ def run_selected_program(selected_program, config_filepath):
         GEMpRFAnalysis.run(cfg, prf_model, prf_space)
         
 # run the main function
-def run():      
+def init_setup(config_filepath = None):    
     # NOTE: Select the program to run
     selected_program = SelectedProgram.GEMAnalysis
 
-    print ("Running the GEM pRF Analysis...")
-
-    # Check if the user has provided a config filepath
-    has_user_provided_config = False
-    try:
-        config_filepath = sys.argv[1]
-        has_user_provided_config = True
-        if selected_program == SelectedProgram.GEMSimulations:
-            pass
-    except IndexError:
-        pass
-
-    # ...Set config paths
-    if not has_user_provided_config:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        if selected_program == SelectedProgram.GEMSimulations:
-            pass
-        elif selected_program == SelectedProgram.GEMAnalysis:
-            config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config.xml')
-
-    # Simulations are currently not supported on this repository !!!
-    if selected_program == SelectedProgram.GEMSimulations:
-        Logger.print_red_message("Simulations are currently not supported. Please set 'selected_program' to 'GEMAnalysis' in init_setup.py", print_file_name=False)
-        sys.exit(1)        
+    print ("Running the GEM pRF Analysis...")     
 
     run_selected_program(selected_program, config_filepath)
 
 if __name__ == "__main__":
-    run()
-    
+    default_config = os.path.join(os.path.dirname(__file__), 'configs', 'analysis_configs', 'analysis_config.xml')
+    print(f"\033[38;5;208mThe program will try to use the default config filepath:\n\033[0m  {default_config}")
+    choice = input("\033[38;5;208m\nDo you want to continue with this default config? [y/N]: \033[0m").strip().lower()
+    if choice != 'y':
+        print("Aborting program.")
+        sys.exit(0)    
+    init_setup(default_config)
