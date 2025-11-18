@@ -11,7 +11,7 @@
   <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
 
   <!-- Stimulus data -->
-  <stimulus>
+  <stimulus comment="Only in Nifti format">
     <!-- File path for stimulus -->
     <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
