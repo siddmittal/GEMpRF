@@ -13,7 +13,7 @@ authors = [
   { name = "Siddharth Mittal", email = "siddharth.mittal@meduniwien.ac.at" }
 ]
 dependencies = [
-  "cupy-cuda12x==13.4.1",
+  # "cupy-cuda12x==13.4.1", # DISBALED, because different systems may have different CUDA versions installed
   "h5py==3.13.0",
   "joblib==1.4.2",
   "matplotlib==3.10.1",

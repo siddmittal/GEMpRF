@@ -17,15 +17,23 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import argparse
 
 def run(config_filepath=None):
+    # Check if cupy is available for GPU support
+    try:
+        import cupy
+    except ImportError:
+        print("\033[93m\nCuPy python package isn’t installed. Install it and ensure you have an NVIDIA GPU with a compatible CUDA toolkit.\033[0m")
+        print("\033[91m\nAborting program\033[0m")
+        sys.exit(1)        
+
     # Check if config_filepath is provided as a command-line argument or as a function argument
     if config_filepath is None:
         print("\033[91m\n\n⚠️ You have not provided a configuration filepath as an argument.\033[0m")
-        print("Aborting program.")
+        print("\033[91m\nAborting program\033[0m")
         sys.exit(1)
 
     if not os.path.exists(config_filepath):
         print(f"\033[91mError: The configuration file does not exist:\n  {config_filepath}\033[0m")
-        print("Aborting program.")
+        print("\033[91m\nAborting program\033[0m")
         sys.exit(1)
 
     # Start the analysis
