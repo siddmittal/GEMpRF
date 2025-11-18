@@ -3,12 +3,8 @@
     "@Author  :   Siddharth Mittal",
     "@Version :   1.0",
     "@Contact :   siddharth.mittal@meduniwien.ac.at",
-    "@License :   (C)Copyright 2024, Medical University of Vienna"
+    "@License :   (C)Copyright 2024 - 2025, Medical University of Vienna"
 -->
-
-<!-- NOTE for Analysis: For DUMMY/Analsis, set correct Visual field at two positions, one for the <stimulus> and another for <search_space>-->
-
-
 <root>
   <!-- Path information -->
   <path_to_append>.../</path_to_append>
@@ -17,7 +13,7 @@
   <!-- Stimulus data -->
   <stimulus>
     <!-- File path for stimulus -->
-    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>    
+    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
@@ -29,11 +25,10 @@
 
   <!-- Input Data -->
   <input_datasrc>    
-    <BIDS enable="True" run_type="individual"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
-      <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS</basepath>
-      <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- specify if the "analysis-xx"  -->          
-      <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
-
+    <BIDS enable="True" run_type="individual" comment="options are individual/concatenated"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
+      <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/</basepath>
+      <append_to_basepath>derivatives, fmriprep</append_to_basepath>
+      
       <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
       <results_anaylsis_id overwrite="False">GEMpRF</results_anaylsis_id>
             
@@ -44,14 +39,16 @@
         Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
       -->
       <analysis>01</analysis>
-      <sub>001, 002</sub>
+      <sub>all</sub>
       <hemi>all</hemi>
+      <space comment="e.g. fsaverage/fsnative/T1w or all">all</space>
+      <input_file_extension comment="options are .nii.gz/.gii/both">.gii</input_file_extension> <!-- IMPORTANT: volumetric files will be flattend -->
 
       <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
         <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->  
-        <ses>001nn</ses> <!-- comma separated values or specify "all" -->        
-        <run>01, 02</run> <!-- comma separated values or specify "all" -->
+        <ses>all</ses> <!-- comma separated values or specify "all" -->        
+        <run>all</run> <!-- comma separated values or specify "all" -->
       </individual>
 
       <!--CONCATENATED Analysis-->
@@ -85,14 +82,14 @@
 
   <!-- Analysis Model -->
   <pRF_model>    
-    <model>2d_gaussian</model> <!-- 2d_gauss, (DoG, CSS not avaiable at the moment) -->
+    <model>2d_gaussian</model> <!-- 2d_gaussian, (DoG, CSS not avaiable at the moment) -->
   </pRF_model>
 
   <!-- Measured data section -->
   <measured_data>
     <width>101</width>
     <height>101</height>
-    <batches>200</batches>    
+    <batches>500</batches>    
   </measured_data>
 
   <!-- GPU configuration -->

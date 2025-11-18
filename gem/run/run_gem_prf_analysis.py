@@ -453,7 +453,7 @@ class GEMpRFAnalysis:
                 if not os.path.exists(input_data_filepath):
                     raise ValueError(f"Input source file does not exist: {input_data_filepath}", print_file_name=False)
 
-                Logger.print_green_message(f"Processing-{counter}/{len(required_concatenations_info)} data file: {input_data_filepath}...", print_file_name=False)
+                Logger.print_green_message(f"Processing-{counter}/{len(required_concatenations_info)} data file: {input_data_filepath}", print_file_name=False)
                 measured_data_filepath = input_data_filepath
                   
                 # y-signals
@@ -573,11 +573,13 @@ class GEMpRFAnalysis:
             # NOTE: Write the full results of the current concatenation block to file
             JsonMgr.write_to_file(filepath=concatenate_block_info.concatenation_result_filepath, data=json_data)   
 
+            Logger.print_green_message(f"Results written to file: {concatenate_block_info.concatenation_result_filepath}", print_file_name=False)
+
             # end time
             end_time = time.time()
             iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
-            print(f"Time taken for this analysis: {iteration_time}")
+            print(f"Time taken for this analysis: {iteration_time}\n")
         
         print
 
@@ -647,7 +649,7 @@ class GEMpRFAnalysis:
                 continue
 
             start_time = time.time()
-            Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
+            Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}", print_file_name=False)
             valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu = GEMpRFAnalysis.get_pRF_estimations(cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_list[data_idx])
             # profiler.disable()
             # stats = pstats.Stats(profiler, stream=profile_stream)
@@ -671,7 +673,7 @@ class GEMpRFAnalysis:
             end_time = time.time()
             iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
-            print(f"Time taken for this analysis: {iteration_time}")
+            print(f"Time taken for this analysis: {iteration_time}\n")
 
             # write the time taken for each iteration
             # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\v2_iteration_times_151x151x16.csv"

@@ -12,9 +12,11 @@
 import json
 import os
 import re
+import sys
 
 from gem.data.gem_bids_concatenation_data_info import BidsConcatenationDataInfo
 from gem.data.gem_stimulus_file_info import StimulusFileInfo
+from gem.utils.logger import Logger
 
 class GemBidsHandler:
     @classmethod
@@ -38,7 +40,7 @@ class GemBidsHandler:
                     return found_value
         
     @classmethod    
-    def __get_matching_files(cls, base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, json_item, stimuli_dir_path, is_individual_run):
+    def __get_matching_files(cls, base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, space_list, json_item, stimuli_dir_path, file_extension, is_individual_run):
         if is_individual_run: # in case of individual runs, the user may specify the multiple session/run values (but only one task) and therefore it could be a list
             ses_list = [element.strip() for element in json_item.get("ses").split(',')]
             run_list = [element.strip() for element in json_item.get("run").split(',')]        
@@ -87,7 +89,9 @@ class GemBidsHandler:
 
                                             # files level
                                             for file in files:
-                                                if file.endswith('.nii.gz'):
+                                                # .nii.gz or .gii
+                                                if (file.endswith(file_extension) or file_extension.lower() == 'both') \
+                                                    and (file.endswith('_bold.nii.gz') or file.endswith('_bold.func.gii')):
                                                     # parts = file.split('_')
                                                     filename_without_ext = (file.split('.'))[0]
                                                     parts = filename_without_ext.split('_')
@@ -104,6 +108,7 @@ class GemBidsHandler:
                                                     task_part = filename_info_dict.get('task')
                                                     run_part = filename_info_dict.get('run')
                                                     hemi_part = filename_info_dict.get('hemi')
+                                                    space_part = filename_info_dict.get('space', None) # if filename does not contain space part, consider it None
 
                                                     if ('all' in sub_list or sub_part in sub_list):
                                                         if ('all' in ses_list or ses_part in ses_list):
@@ -111,8 +116,11 @@ class GemBidsHandler:
                                                             if (task_part in task_list):
                                                                 if ('all' in run_list or run_part in run_list):
                                                                     if ('all' in hemi_list or hemi_part in hemi_list):
-                                                                        stimulus_info = cls.get_stimulus_info(stimuli_dir_path, task_part)
-                                                                        matching_files_info.append(tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info))) # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
+                                                                        if (space_part is None or 'all' in space_list or space_part in space_list):
+                                                                            stimulus_info = cls.get_stimulus_info(stimuli_dir_path, task_part)
+                                                                            # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
+                                                                            matching_files_info.append(
+                                                                                tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info)))
 
         return matching_files_info
 
@@ -126,12 +134,17 @@ class GemBidsHandler:
     @classmethod
     def get_input_filepaths(self, bids_config : json, stimuli_dir_path : str):
         base_path = bids_config.get("basepath")
+        file_extension = bids_config.get("input_file_extension")['#text']
+        if file_extension is None or file_extension.lower() not in ['.nii.gz', '.gii', 'both']:
+            Logger.print_red_message(f"Invalid or missing input_file_extension in BIDS config inside configuration XML file. Supported extensions are .nii.gz/.gii/both", print_file_name=False)
+            sys.exit(1)
 
         # common information for both "individual" and "concantenated" analysis
         append_to_basepath_list = [element.strip() for element in bids_config.get("append_to_basepath").split(',')]
         analysis_list = [element.strip() for element in bids_config.get("analysis").split(',')]
         sub_list = [element.strip() for element in bids_config.get("sub").split(',')]
         hemi_list = [element.strip() for element in bids_config.get("hemi").split(',')]
+        space_list = [element.strip() for element in bids_config.get("space")['#text'].split(',')]
 
         # this could be a single list (in case of individual analysis) or a list-of-list (in case of concatenated analysis)
         input_src_files = []
@@ -140,12 +153,12 @@ class GemBidsHandler:
         if bids_config['@enable'] == "True" and bids_config['@run_type'].lower() == "concatenated":
             concatenate_items_list = bids_config.get("concatenated").get("concatenate_item")
             for concatenate_item in concatenate_items_list:
-                src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, concatenate_item, stimuli_dir_path, is_individual_run=False)
+                src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, space_list, concatenate_item, stimuli_dir_path, file_extension, is_individual_run=False)
                 input_src_files.append(src_files)
 
         else:
             individual_item = bids_config.get("individual")
-            input_src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, individual_item, stimuli_dir_path, is_individual_run=True)
+            input_src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, space_list, individual_item, stimuli_dir_path, file_extension, is_individual_run=True)
             input_src_files = sorted(input_src_files, key=lambda x: (x[0], x[1]['sub'], x[1]['ses'], x[1]['run']))
 
         return input_src_files
@@ -153,7 +166,10 @@ class GemBidsHandler:
     @classmethod
     def inputpath2resultpath(self, bids_config : json, input_file_info : tuple, analysis_id : str = None):
         filename = os.path.basename(input_file_info[0])
-        filename_without_extension = filename.split('_bold.nii.gz')[0]
+        if filename.endswith('.nii.gz'):
+            filename_without_extension = filename.split('_bold.nii.gz')[0]
+        elif filename.endswith('.gii'):
+            filename_without_extension = filename.split('_bold.func.gii')[0]
         
         # get BIDS info
         base_path = bids_config.get("basepath")        
@@ -190,7 +206,10 @@ class GemBidsHandler:
 
     @classmethod
     def get_concatenated_result_filepath(cls, bids_config : json, filepath : str, concatenation_result_info : dict):
-        filename_without_extension = os.path.basename(filepath).split('_bold.nii.gz')[0]
+        if filepath.endswith('.nii.gz'):
+            filename_without_extension = os.path.basename(filepath).split('_bold.nii.gz')[0]
+        elif filepath.endswith('.gii'):
+            filename_without_extension = os.path.basename(filepath).split('_bold.func.gii')[0]
 
         concatenated_result_filename = GemBidsHandler.update_filename(filename_without_extension, concatenation_result_info)
 
