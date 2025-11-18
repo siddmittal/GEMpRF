@@ -69,7 +69,7 @@ class GEMpRFAnalysis:
             # get TR
             if cfg.default_hrf["TR"] is None:                
                 TR = stimulus.Header['pixdim'][4]  # now we need to get TR from stimulus # assuming 4th dimension is time
-                Logger.print_yellow_message(f"Setting HRF 't' step value to stimulus TR: {TR} seconds.", print_file_name=False)
+                Logger.print_yellow_message(f"Setting HRF 't' step value to stimulus TR: {TR:.3f} seconds.", print_file_name=False)
                 cfg.default_hrf["t"] = (*cfg.default_hrf["t"][:2], TR)
             else:
                 TR = cfg.default_hrf["TR"]
@@ -388,6 +388,10 @@ class GEMpRFAnalysis:
         # data info
         required_concatenations_info = cls.get_concatenated_runs_data_files_info(cfg)
 
+        if len(required_concatenations_info) == 0:
+            Logger.print_red_message("No data files found. Please check the specified paths in your XML configuration file. Aborting now...", print_file_name=False)
+            return
+
         # NOTE: ----------------- COMMON VARIABLES
         arr_2d_location_inv_M_cpu = None
 
@@ -591,7 +595,7 @@ class GEMpRFAnalysis:
         # data info
         measured_data_list, result_filepaths_list = cls.get_single_run_data_files_info(cfg)
         if len(measured_data_list) == 0:
-            Logger.print_red_message("No data files found. Exiting...", print_file_name=False)
+            Logger.print_red_message("No data files found. Please check the specified paths in your XML configuration file. Aborting now...", print_file_name=False)
             return
 
         GemWriteToFile.get_instance().write_array_to_h5(np.array(measured_data_list), variable_path=['input_data', 'measured_data_list'], append_to_existing_variable=False)

@@ -52,9 +52,10 @@ pip install cupy-cuda12x
 
 
 
-> [!CAUTION] 
-> 
-> Install the CuPy variant that matches *your* CUDA version.
+:::warning
+Install the CuPy variant that matches *your* CUDA version.
+
+:::
 
 You must install CuPy **before running GEM-pRF**.
 
@@ -95,6 +96,7 @@ See a sample config here:
    import gemprf as gp
    gp.run("config.xml")
    ```
+
 
 ---
 

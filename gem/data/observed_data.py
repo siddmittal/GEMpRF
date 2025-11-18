@@ -50,7 +50,8 @@ class ObservedData:
         # reshape the BOLD response data to 2D
         Y_signals_cpu = Y_signals_cpu.reshape(-1, Y_signals_cpu.shape[-1])
 
-        Logger.print_yellow_message(f"Data shape {shape} {['', f'→ {Y_signals_cpu.shape}'][(active_dims > 1)]}", print_file_name=False)
+        # Logger.print_yellow_message(f"Data shape {shape} {['', f'→ {Y_signals_cpu.shape}'][(active_dims > 1)]}", print_file_name=False)
+        Logger.print_yellow_message(f"Data shape {shape} → {Y_signals_cpu.shape}", print_file_name=False)
 
         # just to make them column vectors
         Y_signals_cpu = Y_signals_cpu.T
