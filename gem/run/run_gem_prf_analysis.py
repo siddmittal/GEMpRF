@@ -118,8 +118,8 @@ class GEMpRFAnalysis:
 
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
         stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=hrf_curve)
-        GemWriteToFile.get_instance().write_array_to_h5(stimulus.resampled_data, variable_path=['stimulus', 'resampled_data'], append_to_existing_variable=False)
-        GemWriteToFile.get_instance().write_array_to_h5(stimulus.stimulus_data_cpu, variable_path=['stimulus', 'stimulus_data_hrf_convolved'], append_to_existing_variable=False)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.resampled_data, variable_path=[f'stimulus', f'{stimulus_info.stimulus_task}', 'resampled_data'], append_to_existing_variable=False)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.stimulus_data_cpu, variable_path=[f'stimulus', f'{stimulus_info.stimulus_task}', 'stimulus_data_hrf_convolved'], append_to_existing_variable=False)
 
         return stimulus
         
@@ -164,9 +164,11 @@ class GEMpRFAnalysis:
         return cls.__selected_prf_model
 
     @classmethod    
-    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg):
+    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg, stimulus_task_name : str = None):
         # model signals
         S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)
+
+        subcat = f"{stimulus_task_name}" if stimulus_task_name is not None else ""
 
         # model derivatives signals
         dS_dtheta_batches_list = []
@@ -175,20 +177,18 @@ class GEMpRFAnalysis:
             for theta_idx in range(num_theta):
                 dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
                 dS_dtheta_batches_list.append(dS_dtheta_batches)
-                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=[f'model', f'{subcat}', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
                                                                                                                                         model_signals_rm_batches= S_batches, 
                                                                                                                                         dS_dtheta_rm_batches_list = dS_dtheta_batches_list)
         # Write debug info
-        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
-        GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
+        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=[f'model', f'{subcat}', 'model_signals'], append_to_existing_variable=False)  
+        GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=[f'model', f'{subcat}', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
         if orthonormalized_dervatives_signals_batches_list is not None:
             for theta_idx in range(len(orthonormalized_dervatives_signals_batches_list)):
-                GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
-
-
+                GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=[f'model', f'{subcat}', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
         return orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list    
 
     @classmethod
@@ -416,15 +416,19 @@ class GEMpRFAnalysis:
                 if stimulus_task_name not in task_specific_data_dict: 
                     task_specific_stimulus = GEMpRFAnalysis.load_stimulus(cfg, single_stimulus_info)
                     #...get Orthogonalization matrix
-                    ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=task_specific_stimulus.NumFrames) # NOTE: use the correct stimulus as the number of frames could be different!!!!!!!!!!!!!!
+                    # NOTE: use the correct stimulus as the number of frames could be different!!!!!!!!!!!!!!
+                    ortho_matrix_dim = task_specific_stimulus.NumFrames if (not task_specific_stimulus.HighTemporalResolutionEnabled) else task_specific_stimulus.NumFramesDownsampled                    
+                    ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=ortho_matrix_dim) 
                     O_gpu = ortho_matrix.get_orthogonalization_matrix()
+                    GemWriteToFile.get_instance().write_array_to_h5(O_gpu, variable_path=[f'model', f'{stimulus_task_name}', 'orthogonalization_matrix'], append_to_existing_variable=False)
 
                     prf_analysis = PRFAnalysis(prf_space=prf_space, stimulus=task_specific_stimulus) # to hold all the information about this analysis run,  # NOTE: PRFAnalysis class will be helpful for the concatenation runs, where you can store the results with different stimulus in corresponding objects (i.e. prf_analysis)                              
                     prf_analysis.orthonormalized_S_batches, prf_analysis.orthonormalized_dS_dtheta_batches_list = cls.compute_orthonormalized_signals(O_gpu=O_gpu, 
                                                                                                                                                 prf_space= prf_space, 
                                                                                                                                                 prf_model= prf_model, 
                                                                                                                                                 stimulus= task_specific_stimulus,
-                                                                                                                                                cfg = cfg) 
+                                                                                                                                                cfg = cfg,
+                                                                                                                                                stimulus_task_name=stimulus_task_name) 
 
                     # add to dictionary
                     task_specific_data = TaskSpecificData(task_specific_stimulus, O_gpu, prf_analysis)
