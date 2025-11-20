@@ -19,7 +19,7 @@ from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
 
 class Stimulus:
-    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold, high_temporal_resolution_info=None):
+    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold, high_temporal_resolution_info=None, stimulus_task_name=None):
         # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
         script_directory = os.path.dirname(os.path.abspath(__file__))
         stimulus_file_path = os.path.join(script_directory, relative_file_path)
@@ -41,6 +41,7 @@ class Stimulus:
         self.x_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.x_range_cpu,))
         self.y_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.y_range_cpu,))
         self.__header = stimulus_img.header
+        self.__stimulus_task_name = stimulus_task_name
 
         # high temporal resolution stimulus params
         if high_temporal_resolution_info:
@@ -93,6 +94,10 @@ class Stimulus:
     @property
     def Header(self):
         return self.__header
+
+    @property
+    def StimulusTaskName(self):
+        return self.__stimulus_task_name
 
     def compute_resample_stimulus_data(self
                                , resampled_stimulus_shape # e.g. resampled_stimulus_shape = (DESIRED_STIMULUS_SIZE_X, DESIRED_STIMULUS_SIZE_Y, original_stimulus_shape[2])
