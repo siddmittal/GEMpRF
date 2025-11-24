@@ -21,7 +21,7 @@ from gem.utils.logger import Logger
 class GemBidsHandler:
     @classmethod
     def __get_stimulus_file_info(cls, stimulus_dir : str, stimulus_filename : str):
-        match = re.search(r'task-([a-zA-Z0-9]+)', stimulus_filename)
+        match = re.search(r'task-([a-zA-Z0-9\-]+)', stimulus_filename) # regex to extract task name even if it contains hyphens
         if match:
             stimulus_task = match.group(1)
         else:
@@ -35,7 +35,7 @@ class GemBidsHandler:
         parts = bids_format_string.split('_')
         for part in parts:
             if '-' in part:
-                found_key, found_value = part.split('-')
+                found_key, found_value = part.split('-', 1) # split only on the first hyphen
                 if found_key == key:
                     return found_value
         
@@ -98,7 +98,7 @@ class GemBidsHandler:
                                                     filename_info_dict = {}
                                                     for part in parts:
                                                         if '-' in part:
-                                                            key, value = part.split('-')
+                                                            key, value = part.split('-', 1) # split only on the first hyphen
                                                             filename_info_dict[key] = value
                                                     
                                                     filename_info_dict['analysis'] = analysis_id # also add analysis id to the filename_parts
