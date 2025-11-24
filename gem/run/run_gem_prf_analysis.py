@@ -606,7 +606,10 @@ class GEMpRFAnalysis:
         GemWriteToFile.get_instance().write_array_to_h5(np.array(measured_data_list), variable_path=['input_data', 'measured_data_list'], append_to_existing_variable=False)
 
         # stimulus
-        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
+        if cfg.bids['@enable'] == "True":
+            stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
+        else:
+            stimulus_info = GemBidsHandler.get_non_bids_stimulus_info(cfg)
         stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
 
         # M-Matrix

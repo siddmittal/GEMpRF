@@ -68,15 +68,26 @@
 
     <!--OR, make Bids False and specify directly single/multiple filepaths -->
     <fixed_paths>
-      <measured_data_filepath> <!-- Measured input data filepaths -->
-        <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem_generic_test/BIDS/sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
-        <filepath>dummy////sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+
+      <stimulus_filepath>/path/to/your/stimulus_file.nii.gz</stimulus_filepath>
+    
+      <measured_data_filepath comment="Add one or more measured-data filepaths here. Use a separate filepath block for each entry.">      
+        <filepath>/path/to/sub-XXX/ses-YYY/func/sub-XXX_ses-YYY_task-XYZ_run-01_bold.nii.gz</filepath>
+        <filepath>/path/to/sub-XXX/ses-YYY/func/sub-XXX_ses-YYY_task-XYZ_run-02_bold.nii.gz</filepath>
+        <!-- <filepath>/optional/example/of/more_files.nii.gz</filepath> -->
       </measured_data_filepath>              
-      <results> <!-- Results filepaths realted  -->
-        <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem_generic_test/derivatives/prfanalyze-gem/analysis-01/sub-001/ses-3n2/</basepath> <!-- Base path for results -->    
-        <custom_filename_postfix>_[gem-new_data-simulated_v1_151x151x8_refine-validation]</custom_filename_postfix> <!-- Custom filename postfix -->    
-        <prepend_date>True</prepend_date> <!-- Flag to prepend date -->
+
+      <results>
+        <!-- Root directory where all output files will be written -->
+        <basepath>/path/to/output/analysis-folder/</basepath>
+
+        <!-- String appended to each results filename (optional) -->
+        <custom_filename_postfix>_[your-custom-postfix]</custom_filename_postfix>
+
+        <!-- If True, the current date is prepended to all results filenames -->
+        <prepend_date>False</prepend_date>
       </results>
+    
     </fixed_paths>
   </input_datasrc>
 

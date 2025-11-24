@@ -132,7 +132,19 @@ class GemBidsHandler:
         return stimulus_info     
 
     @classmethod
-    def get_input_filepaths(self, bids_config : json, stimuli_dir_path : str):
+    def get_non_bids_stimulus_info(cls, cfg):
+        stimulus_filepath = cfg.fixed_paths['stimulus_filepath']
+        if not os.path.isfile(stimulus_filepath):
+            Logger.print_red_message(f"Stimulus file not found at the specified path: {stimulus_filepath}", print_file_name=False)
+            sys.exit(1)
+        stimulus_dir = os.path.dirname(stimulus_filepath)
+        stimulus_name = os.path.basename(stimulus_filepath)
+
+        stimulus_info = cls.__get_stimulus_file_info(stimulus_dir, stimulus_name)
+        return stimulus_info   
+
+    @classmethod
+    def get_input_filepaths(cls, bids_config : json, stimuli_dir_path : str):
         base_path = bids_config.get("basepath")
         file_extension = bids_config.get("input_file_extension")['#text']
         if file_extension is None or file_extension.lower() not in ['.nii.gz', '.gii', 'both']:
