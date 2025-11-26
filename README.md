@@ -12,10 +12,9 @@ For theory and full method details, see our paper:
 
 ## Documentation
 
-Full documentation is coming soon:
-<https://gemprf.github.io/>
+* Documentation and examples are available at: <https://gemprf.github.io/>
 
-For now, the paper above is the best reference for the mathematical and computational design.
+* For a deeper look into the mathematical and computational foundations, the paper above is the best reference.
 
 
 ---
