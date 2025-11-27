@@ -69,7 +69,7 @@ class GEMpRFAnalysis:
             # get TR
             if cfg.default_hrf["TR"] is None:                
                 TR = stimulus.Header['pixdim'][4]  # now we need to get TR from stimulus # assuming 4th dimension is time
-                Logger.print_yellow_message(f"Setting HRF 't' step value to stimulus ({stimulus.StimulusTaskName}) TR: {TR:.3f} seconds.", print_file_name=False)
+                Logger.print_yellow_message(f"\nSetting HRF 't' step value to stimulus ({stimulus.StimulusTaskName}) TR: {TR:.3f} seconds.", print_file_name=False)
                 cfg.default_hrf["t"] = (*cfg.default_hrf["t"][:2], TR)
             else:
                 TR = cfg.default_hrf["TR"]

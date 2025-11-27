@@ -38,7 +38,38 @@ class GemBidsHandler:
                 found_key, found_value = part.split('-', 1) # split only on the first hyphen
                 if found_key == key:
                     return found_value
-        
+
+    @classmethod
+    def __print_bids_tree_summary(cls, base_path, file_extension, analysis_list, sub_list, ses_list, run_list, task_list, hemi_list, space_list, is_individual_run):
+        # compact list formatter
+        def _short(x, limit=4):
+            if not x:
+                return "-"
+            if len(x) <= limit:
+                return ",".join(map(str, x))
+            return ",".join(map(str, x[:limit])) + ",..."
+
+        tree_items = [
+            f"base= {base_path}",
+            f"ext= {file_extension}",
+            f"analysis= {_short(analysis_list)}",
+            f"sub= {_short(sub_list)}",
+            f"ses= {_short(ses_list)}",
+            f"run= {_short(run_list)}",
+            f"task= {_short(task_list)}",
+            f"hemi= {_short(hemi_list)}",
+            f"space= {_short(space_list)}",
+            f"run type= {'individual' if is_individual_run else 'concatenated'}",
+        ]
+
+        # print root in green
+        Logger.print_green_message("\nSearching BIDS tree:", print_file_name=False)
+
+        # print as a nice tree
+        for i, item in enumerate(tree_items):
+            prefix = "└── " if i == len(tree_items) - 1 else "│── "
+            print(prefix + item)
+
     @classmethod    
     def __get_matching_files(cls, base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, space_list, json_item, stimuli_dir_path, file_extension, is_individual_run):
         if is_individual_run: # in case of individual runs, the user may specify the multiple session/run values (but only one task) and therefore it could be a list
@@ -54,6 +85,9 @@ class GemBidsHandler:
 
         if append_to_basepath_list:
             base_path = os.path.join(base_path, *append_to_basepath_list)
+
+        # quick summary of the BIDS tree being searched
+        cls.__print_bids_tree_summary(base_path, file_extension, analysis_list, sub_list, ses_list, run_list, task_list, hemi_list, space_list, is_individual_run)
 
         matching_files_info = []
 
