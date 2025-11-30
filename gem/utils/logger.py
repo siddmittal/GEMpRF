@@ -21,6 +21,14 @@ class Logger:
             print(f"\033[91mFile: {caller_filename}\033[0m")
 
     @classmethod
+    def print_blue_message(cls, message, print_file_name=True):             
+        print(f"\033[94m{message}\033[0m")
+        if (print_file_name):
+            frame = inspect.currentframe().f_back
+            caller_filename = inspect.getframeinfo(frame).filename   
+            print(f"\033[94mFile: {caller_filename}\033[0m")            
+
+    @classmethod
     def print_green_message(cls, message, print_file_name=True):             
         print(f"\033[92m{message}\033[0m")
         if (print_file_name):

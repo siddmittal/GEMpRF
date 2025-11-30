@@ -14,6 +14,7 @@ import os
 import re
 import sys
 
+from gem.data.diagnostic_bids_tree import DiagnosticBidsTree
 from gem.data.gem_bids_concatenation_data_info import BidsConcatenationDataInfo
 from gem.data.gem_stimulus_file_info import StimulusFileInfo
 from gem.utils.logger import Logger
@@ -63,7 +64,7 @@ class GemBidsHandler:
         ]
 
         # print root in green
-        Logger.print_green_message("\nSearching BIDS tree:", print_file_name=False)
+        Logger.print_green_message("\nSearching BIDS tree with following user filters:", print_file_name=False)
 
         # print as a nice tree
         for i, item in enumerate(tree_items):
@@ -155,6 +156,12 @@ class GemBidsHandler:
                                                                             # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
                                                                             matching_files_info.append(
                                                                                 tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info)))
+        # BIDS Tree Diagnostics:
+        try:
+            diag = DiagnosticBidsTree.collect_bids_diagnostics(base_path)
+            DiagnosticBidsTree.print_bids_diagnostic_tree(diag, analysis_list, sub_list, ses_list, run_list, task_list, hemi_list, space_list, file_extension)
+        except Exception as e:
+            Logger.print_red_message(f"Could not collect or print BIDS diagnostic tree: {e}", print_file_name=False)
 
         return matching_files_info
 
@@ -198,7 +205,8 @@ class GemBidsHandler:
         # check if "Individual" or "Concatenated" tasks are specified
         if bids_config['@enable'] == "True" and bids_config['@run_type'].lower() == "concatenated":
             concatenate_items_list = bids_config.get("concatenated").get("concatenate_item")
-            for concatenate_item in concatenate_items_list:
+            for i, concatenate_item in enumerate(concatenate_items_list, start=1):
+                Logger.print_blue_message(f"\n[ Gathering information for Concatenated block - {i} ]", print_file_name=False)
                 src_files = GemBidsHandler.__get_matching_files(base_path, append_to_basepath_list, analysis_list, sub_list, hemi_list, space_list, concatenate_item, stimuli_dir_path, file_extension, is_individual_run=False)
                 input_src_files.append(src_files)
 
