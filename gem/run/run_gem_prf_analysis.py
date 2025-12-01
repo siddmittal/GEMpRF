@@ -749,8 +749,8 @@ class GEMpRFAnalysis:
             file_processed_counter += 1
 
             # # end time
-            # end_time = time.time()
-            # iteration_time = end_time - start_time
+            end_time = time.time()
+            iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
             print(f"Time taken for this analysis: {iteration_time}\n")
 
