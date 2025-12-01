@@ -1,0 +1,22 @@
+# Include package data (ONLY specify the non-python files that need to be included)
+# Include config files
+recursive-include gem/configs *.xml *.h5
+
+# Include CUDA kernels
+recursive-include gem/kernels *.cu *.ptx
+
+# Exclude tests and test data
+recursive-exclude gem/tests *
+recursive-exclude gem/tests/temp *
+recursive-exclude gem/tests/testdata *
+
+# Exclude cache and compiled artifacts
+recursive-exclude gem/__pycache__ *
+recursive-exclude __pycache__ *
+recursive-exclude gem/**/*.pyc
+recursive-exclude gem/**/*.pyo
+recursive-exclude gem/**/*.nbc
+recursive-exclude gem/**/*.nbi
+
+# Misc OS garbage
+exclude .DS_Store

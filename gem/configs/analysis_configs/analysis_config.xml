@@ -3,21 +3,17 @@
     "@Author  :   Siddharth Mittal",
     "@Version :   1.0",
     "@Contact :   siddharth.mittal@meduniwien.ac.at",
-    "@License :   (C)Copyright 2024, Medical University of Vienna"
+    "@License :   (C)Copyright 2024 - 2025, Medical University of Vienna"
 -->
-
-<!-- NOTE for Analysis: For DUMMY/Analsis, set correct Visual field at two positions, one for the <stimulus> and another for <search_space>-->
-
-
 <root>
   <!-- Path information -->
   <path_to_append>.../</path_to_append>
   <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
 
   <!-- Stimulus data -->
-  <stimulus>
+  <stimulus comment="Only in Nifti format">
     <!-- File path for stimulus -->
-    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>    
+    <directory>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS/derivatives/prfprepare/analysis-01/sub-001/stimuli</directory>
     <visual_field>9</visual_field> <!-- Visual field Radius, NOTE: Use "10" for simulated data, else "9" -->
     <width>101</width>
     <height>101</height>
@@ -29,11 +25,10 @@
 
   <!-- Input Data -->
   <input_datasrc>    
-    <BIDS enable="True" run_type="individual"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
-      <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/BIDS</basepath>
-      <append_to_basepath>derivatives, prfprepare</append_to_basepath> <!-- specify if the "analysis-xx"  -->          
-      <!-- <basepath>D:/results/fmri/generic/</basepath>           -->
-
+    <BIDS enable="True" run_type="individual" comment="options are individual/concatenated"> <!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
+      <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/stimsim24/</basepath>
+      <append_to_basepath>derivatives, fmriprep</append_to_basepath>
+      
       <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
       <results_anaylsis_id overwrite="False">GEMpRF</results_anaylsis_id>
             
@@ -44,14 +39,16 @@
         Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
       -->
       <analysis>01</analysis>
-      <sub>001, 002</sub>
+      <sub>all</sub>
       <hemi>all</hemi>
+      <space comment="e.g. fsaverage/fsnative/T1w or all">all</space>
+      <input_file_extension comment="options are .nii.gz/.gii/both">.gii</input_file_extension> <!-- IMPORTANT: volumetric files will be flattend -->
 
       <!--INDIVIDUAL Task/stimulus Analysis-->
       <individual>
         <task>bar</task> <!--name of the stimulus, this will be used to find the file in the stimulus directory, ONLY one value is allowed-->  
-        <ses>001nn</ses> <!-- comma separated values or specify "all" -->        
-        <run>01, 02</run> <!-- comma separated values or specify "all" -->
+        <ses>all</ses> <!-- comma separated values or specify "all" -->        
+        <run>all</run> <!-- comma separated values or specify "all" -->
       </individual>
 
       <!--CONCATENATED Analysis-->
@@ -71,28 +68,39 @@
 
     <!--OR, make Bids False and specify directly single/multiple filepaths -->
     <fixed_paths>
-      <measured_data_filepath> <!-- Measured input data filepaths -->
-        <filepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem_generic_test/BIDS/sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
-        <filepath>dummy////sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+
+      <stimulus_filepath>/path/to/your/stimulus_file.nii.gz</stimulus_filepath>
+    
+      <measured_data_filepath comment="Add one or more measured-data filepaths here. Use a separate filepath block for each entry.">      
+        <filepath>/path/to/sub-XXX/ses-YYY/func/sub-XXX_ses-YYY_task-XYZ_run-01_bold.nii.gz</filepath>
+        <filepath>/path/to/sub-XXX/ses-YYY/func/sub-XXX_ses-YYY_task-XYZ_run-02_bold.nii.gz</filepath>
+        <!-- <filepath>/optional/example/of/more_files.nii.gz</filepath> -->
       </measured_data_filepath>              
-      <results> <!-- Results filepaths realted  -->
-        <basepath>/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem_generic_test/derivatives/prfanalyze-gem/analysis-01/sub-001/ses-3n2/</basepath> <!-- Base path for results -->    
-        <custom_filename_postfix>_[gem-new_data-simulated_v1_151x151x8_refine-validation]</custom_filename_postfix> <!-- Custom filename postfix -->    
-        <prepend_date>True</prepend_date> <!-- Flag to prepend date -->
+
+      <results>
+        <!-- Root directory where all output files will be written -->
+        <basepath>/path/to/output/analysis-folder/</basepath>
+
+        <!-- String appended to each results filename (optional) -->
+        <custom_filename_postfix>_[your-custom-postfix]</custom_filename_postfix>
+
+        <!-- If True, the current date is prepended to all results filenames -->
+        <prepend_date>False</prepend_date>
       </results>
+    
     </fixed_paths>
   </input_datasrc>
 
   <!-- Analysis Model -->
   <pRF_model>    
-    <model>2d_gaussian</model> <!-- 2d_gauss, (DoG, CSS not avaiable at the moment) -->
+    <model>2d_gaussian</model> <!-- 2d_gaussian, (DoG, CSS not avaiable at the moment) -->
   </pRF_model>
 
   <!-- Measured data section -->
   <measured_data>
     <width>101</width>
     <height>101</height>
-    <batches>200</batches>    
+    <batches>500</batches>    
   </measured_data>
 
   <!-- GPU configuration -->
@@ -117,7 +125,7 @@
     </optional_analysis_params>
     
     <!-- if the user wants to generate a rectilinear grid within the GEM-pRF program, specify the default values below. Please NOTE that these values will ONLY be used if their corresponding optional_analysis_params = False -->
-    <default_hrf t="(0, 45, 1)" peak_delay="6.16" under_shoot_delay="12.0" peak_disp="0.85" under_disp="0.82" peak_to_undershoot="2.15" normalize="true"/> <!-- SPM parameters, "t" is fed to np.arange(start, stop, step), set "step" to a lower value in case of high temporal stimulus -->
+    <default_hrf t="(0, 45)" TR="auto" peak_delay="6.16" under_shoot_delay="12.0" peak_disp="0.85" under_disp="0.82" peak_to_undershoot="2.15" normalize="true"/> <!-- SPM parameters, "t" is fed to np.arange(start, stop, step), "step" represents the TR value, set it to a lower value in case of high temporal stimulus. If TR = "auto" then, its value will be read from the stimulus file -->
     <default_spatial_grid visual_field_radius="13.5" num_horizontal_prfs="151" num_vertical_prfs="151"/>
     <default_sigmas num_sigmas="16" min_sigma="0.5" max_sigma="5"/>
   </search_space>

@@ -54,3 +54,8 @@ codebase/gpu-simulation-grid-fitting/FastGridFittingApp/.vs/FastGridFittingApp/v
 *.pkl
 /codebase-cpp/fmri-hpc/x64/Debug
 /gem/space/__pycache__
+
+# Ignore all build outputs
+dist/
+*.egg-info/
+build/

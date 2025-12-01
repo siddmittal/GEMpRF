@@ -19,7 +19,7 @@ from gem.utils.gem_gpu_manager import GemGpuManager as ggm
 from gem.utils.logger import Logger
 
 class Stimulus:
-    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold, high_temporal_resolution_info=None):
+    def __init__(self, relative_file_path, size_in_degrees, stim_config, binarize, binarize_threshold, high_temporal_resolution_info=None, stimulus_task_name=None):
         # IMPORTANT: The file paths are resolved relative to the current Python script file instead of the current working directory (cwd)
         script_directory = os.path.dirname(os.path.abspath(__file__))
         stimulus_file_path = os.path.join(script_directory, relative_file_path)
@@ -40,6 +40,8 @@ class Stimulus:
         self.y_range_cpu = np.linspace(-float(stim_config["visual_field"]), +float(stim_config["visual_field"]), int(stim_config["height"]))
         self.x_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.x_range_cpu,))
         self.y_range_gpu = ggm.get_instance().execute_cupy_func_on_default(cp.asarray, cupy_func_args=(self.y_range_cpu,))
+        self.__header = stimulus_img.header
+        self.__stimulus_task_name = stimulus_task_name
 
         # high temporal resolution stimulus params
         if high_temporal_resolution_info:
@@ -88,6 +90,14 @@ class Stimulus:
     @property
     def SliceTimeRef(self):
         return self.__slice_time_ref
+
+    @property
+    def Header(self):
+        return self.__header
+
+    @property
+    def StimulusTaskName(self):
+        return self.__stimulus_task_name
 
     @property
     def SizeInVisualFieldDegrees(self):

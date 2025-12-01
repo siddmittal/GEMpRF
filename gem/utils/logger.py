@@ -12,7 +12,6 @@
 import inspect
 import base64
 class Logger:
-
     @classmethod
     def print_red_message(cls, message, print_file_name=True):        
         print(f"\033[91m{message}\033[0m")
@@ -20,6 +19,14 @@ class Logger:
             frame = inspect.currentframe().f_back
             caller_filename = inspect.getframeinfo(frame).filename
             print(f"\033[91mFile: {caller_filename}\033[0m")
+
+    @classmethod
+    def print_blue_message(cls, message, print_file_name=True):             
+        print(f"\033[94m{message}\033[0m")
+        if (print_file_name):
+            frame = inspect.currentframe().f_back
+            caller_filename = inspect.getframeinfo(frame).filename   
+            print(f"\033[94mFile: {caller_filename}\033[0m")            
 
     @classmethod
     def print_green_message(cls, message, print_file_name=True):             
@@ -38,15 +45,5 @@ class Logger:
             print(f"\033[93mFile: {caller_filename}\033[0m")
 
 # # base64.b64encode(original_str.encode('utf-8'))
-Logger.print_yellow_message(base64.b64decode(b'Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT'
-b'09PT09PT09PT09PT09PT09PQpHRU0gcFJGIEFuYWx5c2lzIC0gVW5yZWx'
-b'lYXNlZCBWZXJzaW9uIGZvciBUZXN0aW5nIE9ubHkKPT09PT09PT09PT09PT09'
-b'PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Cgp'
-b'AQXV0aG9yICAgOiBTaWRkaGFydGggTWl0dGFsCkBWZXJzaW9uICA6IDEuMApAQ2'
-b'9udGFjdCAgOiBzaWRkaGFydGgubWl0dGFsQG1lZHVuaXdpZW4uYWMuYXQKQExpY'
-b'2Vuc2UgIDogKEMpIENvcHlyaWdodCAyMDI0LTIwMjUsIE1lZGljYWwgVW5pdmVyc'
-b'2l0eSBvZiBWaWVubmEKCldBUk5JTkc6ClRoaXMgaXMgYW4gdW5yZWxlYXNlZCB2Z'
-b'XJzaW9uIGZvciB0ZXN0aW5nIHB1cnBvc2VzLgpJdHMgZGlzdHJpYnV0aW9uIGlzI'
-b'HN0cmljdGx5IHByb2hpYml0ZWQuCgo9PT09PT09PT09PT09PT09PT09PT09PT09PT0'
-b'9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K').decode('utf-8'), print_file_name=False)
-
+val = (b'PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CkdFTSBwUkYgQW5hbHlzaXMgU29mdHdhcmUKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CgpAQXV0aG9yICAgOiBTaWRkaGFydGggTWl0dGFsCkBDb250YWN0ICA6IHNpZGRoYXJ0aC5taXR0YWxAbWVkdW5pd2llbi5hYy5hdApATGljZW5zZSAgOiAoQykgQ29weXJpZ2h0IDIwMjMtMjAyNSwgTWVkaWNhbCBVbml2ZXJzaXR5IG9mIFZpZW5uYSAKQENpdGUgRE9JIDogaHR0cHM6Ly9kb2kub3JnLzEwLjExMDEvMjAyNS4wNS4xNi42NTQ1NjAKClBhcGVyIFRpdGxlOiBHRU0tcFJGOiBHUFUtRW1wb3dlcmVkIE1hcHBpbmcgb2YgUG9wdWxhdGlvbiAKUmVjZXB0aXZlIEZpZWxkcyBmb3IgTGFyZ2UtU2NhbGUgZk1SSSBBbmFseXNpcwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0=')
+Logger.print_yellow_message(base64.b64decode(val).decode('utf-8'), print_file_name=False)

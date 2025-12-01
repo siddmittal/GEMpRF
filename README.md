@@ -1,74 +1,97 @@
-Welcome to **GEM-pRF** - a standalone, plug-and-play software for population receptive field (pRF) mapping, designed for **large-scale data analysis with high accuracy**.
+# GEM-pRF
+
+Welcome to **GEM-pRF**, a standalone, GPU-accelerated tool for population receptive field (pRF) mapping, built for **large-scale fMRI analysis**.
+
+For theory and full method details, see our paper:
+
+👉 *Mittal et al. (2025):*  **GEM-pRF: GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis**
+<https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1>
 
 
-To understand the theoretical foundations and details of how the software works, please refer to our paper: 👉[Mittal et al (2025), ](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*[GEM-pRF: GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1)*
-
+---
 
 ## Documentation
 
-An official documentation is coming soon ([GEM-pRF documentation link](https://gemprf.github.io/))! Meanwhile, to get the mathematical foundation of the software, you may refer to the [GEM-pRF paper](https://www.biorxiv.org/content/10.1101/2025.05.16.654560v1).
+* Documentation and examples are available at: <https://gemprf.github.io/>
 
+* For a deeper look into the mathematical and computational foundations, the paper above is the best reference.
+
+
+---
 
 ## Installation
 
-GEM-pRF requires the GPU access for the data processing. At the moment, GEM uses CUDA libraries to acess/process data on NVIDIA GPUs.
+GEM-pRF relies on an NVIDIA GPU and CUDA. Make sure your system has:
 
-> \[!WARNING\]
->
-> Please check your system has compatible NVIDIA GPU available.
+* A compatible **NVIDIA GPU**
+* A matching **CUDA toolkit**
+* A matching **NVCC compiler**
 
-### Step-by-Step Guide
-
-**Step 1. Install dependencies**
-
-* Create or activate your preferred Python/Conda environment.
-* Install all required dependencies listed in `requirements.txt`:
+### 1. Install GEM-pRF
 
 ```bash
-pip install -r requirements.txt
+pip install gemprf
+```
+
+Latest versions:
+<https://pypi.org/project/gemprf/>
+
+### 2. Install CuPy (required)
+
+GEM-pRF depends on CuPy, but CuPy must match your CUDA version — so it is **not installed automatically**.
+
+Install the correct CuPy wheel for your system:
+
+* <https://docs.cupy.dev/en/stable/install.html#installing-cupy>
+* or via pip, for example:
+
+```bash
+pip install cupy-cuda12x
 ```
 
 
-**Step 2. Download GEM-pRF code**
 
-* Clone the repository:
+>[!Caution]
+Install the CuPy variant that matches *your* CUDA version.
 
-```bash
-git clone https://github.com/siddmittal/GEMpRF.git
-cd GEMpRF
-```
+You must install CuPy **before running GEM-pRF**.
 
+
+---
 
 ## Running GEM-pRF
 
+After installing `gemprf` and a compatible CuPy build, you can run GEM-pRF directly from Python.
 
-> \[!CAUTION\]
-> Before proceeding, make sure to install the required python dependencies as specified in the `requirements.txt` file
+### Example
 
-GEM-pRF is written as a **standalone software**. It comes with an XML configuration file. Once you configure your XML file (see [sample config](https://github.com/siddmittal/GEMpRF/blob/main/gem/configs/analysis_configs/analysis_config.xml)), you can directly run the software.
+```python
+import gemprf as gp
 
-### 🔹 **Option A: Run from terminal**
+gp.run("path/to/your_config.xml")
+```
+
+### Configuration files
+
+GEM-pRF uses XML configuration files to define analysis settings.
+See a sample config here:
+
+<https://github.com/siddmittal/GEMpRF_Demo/blob/main/sample_configs/sample_config.xml>
 
 
+---
 
+## Quick workflow
 
-1. Open a terminal (e.g. Anaconda Prompt).
-2. Activate the environment with the dependencies installed.
-3. Navigate to the GEM-pRF folder.
+1. Install GEM-pRF → `pip install gemprf`
+2. Install the correct CuPy for your CUDA environment
+3. Prepare your XML config file
 4. Run:
 
-   ```bash
-   python run_gem.py PATH_TO_YOUR_XML_CONFIG_FILE
+   ```python
+   import gemprf as gp
+   gp.run("config.xml")
    ```
-
-
-### 🔹 **Option B: Run from IDE (e.g. VS Code)**
-
-
-
-
-1. Open the downloaded GEM-pRF folder in VS Code.
-2. Edit the `run_gem.py` script to specify the path to your XML config file.
-3. Run the script directly from the IDE.
+---
 
 

@@ -66,6 +66,17 @@ class GEMpRFAnalysis:
                 Logger.print_red_message(f"Could not load HRF curve from file: {cfg.optional_analysis_params['filepath']} with key: {cfg.optional_analysis_params['hrf']['key']}", print_file_name=False)
                 sys.exit(1)
         else:
+            # get TR
+            if cfg.default_hrf["TR"] is None:                
+                TR = stimulus.Header['pixdim'][4]  # now we need to get TR from stimulus # assuming 4th dimension is time
+                Logger.print_yellow_message(f"\nSetting HRF 't' step value to stimulus ({stimulus.StimulusTaskName}) TR: {TR:.3f} seconds.", print_file_name=False)
+                cfg.default_hrf["t"] = (*cfg.default_hrf["t"][:2], TR)
+            else:
+                TR = cfg.default_hrf["TR"]
+            
+            # spm "t" (start, stop, step/TR)
+            cfg.default_hrf["t"] = (*cfg.default_hrf["t"], TR)
+
             # generate HRF curve using SPM parameters
             hrf_params = (np.arange(*cfg.default_hrf["t"]),
                           cfg.default_hrf["peak_delay"], 
@@ -100,7 +111,8 @@ class GEMpRFAnalysis:
                                          stim_config = cfg.stimulus, 
                                          binarize=binarize, 
                                          binarize_threshold=binarize_threshold,
-                                         high_temporal_resolution_info=high_temporal_resolution_info)
+                                         high_temporal_resolution_info=high_temporal_resolution_info,
+                                         stimulus_task_name=stimulus_info.stimulus_task)
 
         # get HRF curve
         hrf_curve = cls.get_hrf_curve(cfg, stimulus)
@@ -108,8 +120,8 @@ class GEMpRFAnalysis:
 
         stimulus.compute_resample_stimulus_data((stim_height, stim_width, stimulus.org_data.shape[2])) #stimulus.org_data.shape[2]
         stimulus.compute_hrf_convolved_stimulus_data(hrf_curve=hrf_curve)
-        GemWriteToFile.get_instance().write_array_to_h5(stimulus.resampled_data, variable_path=['stimulus', 'resampled_data'], append_to_existing_variable=False)
-        GemWriteToFile.get_instance().write_array_to_h5(stimulus.stimulus_data_cpu, variable_path=['stimulus', 'stimulus_data_hrf_convolved'], append_to_existing_variable=False)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.resampled_data, variable_path=[f'stimulus', f'{stimulus_info.stimulus_task}', 'resampled_data'], append_to_existing_variable=False)
+        GemWriteToFile.get_instance().write_array_to_h5(stimulus.stimulus_data_cpu, variable_path=[f'stimulus', f'{stimulus_info.stimulus_task}', 'stimulus_data_hrf_convolved'], append_to_existing_variable=False)
 
         return stimulus
         
@@ -154,13 +166,15 @@ class GEMpRFAnalysis:
         return cls.__selected_prf_model
 
     @classmethod    
-    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg, isSimulations = False):
+    def compute_orthonormalized_signals(cls, O_gpu, prf_space : PRFSpace, prf_model : PRFModel, stimulus : Stimulus, cfg, stimulus_task_name : str = None, isSimulations = False):
         # model signals
         S_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams.NONE, cfg=cfg)
         GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
 
         orthonormalized_dervatives_signals_batches_list = None
         dS_dtheta_batches_list = None
+
+        subcat = f"{stimulus_task_name}" if stimulus_task_name is not None else ""
 
         # model derivatives signals
         dS_dtheta_batches_list = []
@@ -169,20 +183,18 @@ class GEMpRFAnalysis:
             for theta_idx in range(num_theta):
                 dS_dtheta_batches = SignalSynthesizer.compute_signals_batches(prf_multi_dim_points_cpu=prf_space.multi_dim_points_cpu, points_indices_mask=None, prf_model=prf_model, stimulus=stimulus, derivative_wrt=GaussianModelParams(theta_idx), cfg=cfg)
                 dS_dtheta_batches_list.append(dS_dtheta_batches)
-                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=['model', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
+                GemWriteToFile.get_instance().write_array_to_h5(dS_dtheta_batches, variable_path=[f'model', f'{subcat}', f'model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
 
         # Orthonormalized model + derivatives signals
         orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list = SignalSynthesizer.orthonormalize_modelled_signals(O_gpu=O_gpu, 
                                                                                                                                         model_signals_rm_batches= S_batches, 
                                                                                                                                         dS_dtheta_rm_batches_list = dS_dtheta_batches_list)
         # Write debug info
-        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=['model', 'model_signals'], append_to_existing_variable=False)  
-        GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=['model', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
+        GemWriteToFile.get_instance().write_array_to_h5(S_batches, variable_path=[f'model', f'{subcat}', 'model_signals'], append_to_existing_variable=False)  
+        GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_S_cm_gpu_batches, variable_path=[f'model', f'{subcat}', 'orthonormalized_model_signals'], append_to_existing_variable=False)  
         if orthonormalized_dervatives_signals_batches_list is not None:
             for theta_idx in range(len(orthonormalized_dervatives_signals_batches_list)):
-                GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=['model', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
-
-
+                GemWriteToFile.get_instance().write_array_to_h5(orthonormalized_dervatives_signals_batches_list[theta_idx], variable_path=[f'model', f'{subcat}', f'orthonormalized_model_signals_derivative_d{theta_idx}'], append_to_existing_variable=False)
         return orthonormalized_S_cm_gpu_batches, orthonormalized_dervatives_signals_batches_list    
 
     @classmethod
@@ -191,7 +203,7 @@ class GEMpRFAnalysis:
         measured_data_list = None
         if cfg.bids['@enable'] == "True":
             measured_data_info_list = GemBidsHandler.get_input_filepaths(bids_config=cfg.bids, stimuli_dir_path= cfg.stimulus['directory'])
-            measured_data_list = [data[0] for data in measured_data_info_list]        
+            measured_data_list = (lambda x: np.array(x)[:, 0] if x else np.array([]))(measured_data_info_list)  # extract only filepaths from the list of tuples
         else:
             measured_data_list = cfg.fixed_paths['measured_data_filepath']['filepath']
             if isinstance(measured_data_list, str):
@@ -334,7 +346,7 @@ class GEMpRFAnalysis:
         Y_signals_cpu = Y_signals_cpu[:, None] if Y_signals_cpu.ndim == 1 else Y_signals_cpu # in case only one signal is present
 
         # exit if number of timepoints in y-signals and stimulus do not match
-        if Y_signals_cpu.shape[0] != stimulus.NumFrames:
+        if Y_signals_cpu.shape[0] != (stimulus.NumFrames, stimulus.NumFramesDownsampled)[stimulus.HighTemporalResolutionEnabled]:
             Logger.print_red_message(f"Number of timepoints in measured fMRI data ({Y_signals_cpu.shape[0]}) and stimulus ({stimulus.NumFrames}) do not match for file: {measured_data_filepath}", print_file_name=False)
             sys.exit(1)
 
@@ -415,6 +427,10 @@ class GEMpRFAnalysis:
         # data info
         required_concatenations_info = cls.get_concatenated_runs_data_files_info(cfg)
 
+        if len(required_concatenations_info) == 0:
+            Logger.print_red_message("No data files found. Please check the specified paths in your XML configuration file. Aborting now...", print_file_name=False)
+            return
+
         # NOTE: ----------------- COMMON VARIABLES
         arr_2d_location_inv_M_cpu = None
 
@@ -439,15 +455,19 @@ class GEMpRFAnalysis:
                 if stimulus_task_name not in task_specific_data_dict: 
                     task_specific_stimulus = GEMpRFAnalysis.load_stimulus(cfg, single_stimulus_info)
                     #...get Orthogonalization matrix
-                    ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=task_specific_stimulus.NumFrames) # NOTE: use the correct stimulus as the number of frames could be different!!!!!!!!!!!!!!
+                    # NOTE: use the correct stimulus as the number of frames could be different!!!!!!!!!!!!!!
+                    ortho_matrix_dim = task_specific_stimulus.NumFrames if (not task_specific_stimulus.HighTemporalResolutionEnabled) else task_specific_stimulus.NumFramesDownsampled                    
+                    ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=ortho_matrix_dim) 
                     O_gpu = ortho_matrix.get_orthogonalization_matrix()
+                    GemWriteToFile.get_instance().write_array_to_h5(O_gpu, variable_path=[f'model', f'{stimulus_task_name}', 'orthogonalization_matrix'], append_to_existing_variable=False)
 
                     prf_analysis = PRFAnalysis(prf_space=prf_space, stimulus=task_specific_stimulus) # to hold all the information about this analysis run,  # NOTE: PRFAnalysis class will be helpful for the concatenation runs, where you can store the results with different stimulus in corresponding objects (i.e. prf_analysis)                              
                     prf_analysis.orthonormalized_S_batches, prf_analysis.orthonormalized_dS_dtheta_batches_list = cls.compute_orthonormalized_signals(O_gpu=O_gpu, 
                                                                                                                                                 prf_space= prf_space, 
                                                                                                                                                 prf_model= prf_model, 
                                                                                                                                                 stimulus= task_specific_stimulus,
-                                                                                                                                                cfg = cfg) 
+                                                                                                                                                cfg = cfg,
+                                                                                                                                                stimulus_task_name=stimulus_task_name) 
 
                     # add to dictionary
                     task_specific_data = TaskSpecificData(task_specific_stimulus, O_gpu, prf_analysis)
@@ -480,7 +500,7 @@ class GEMpRFAnalysis:
                 if not os.path.exists(input_data_filepath):
                     raise ValueError(f"Input source file does not exist: {input_data_filepath}", print_file_name=False)
 
-                Logger.print_green_message(f"Processing-{counter}/{len(required_concatenations_info)} data file: {input_data_filepath}...", print_file_name=False)
+                Logger.print_green_message(f"Processing-{counter}/{len(required_concatenations_info)} data file: {input_data_filepath}", print_file_name=False)
                 measured_data_filepath = input_data_filepath
                   
                 # y-signals
@@ -600,11 +620,13 @@ class GEMpRFAnalysis:
             # NOTE: Write the full results of the current concatenation block to file
             JsonMgr.write_to_file(filepath=concatenate_block_info.concatenation_result_filepath, data=json_data)   
 
+            Logger.print_green_message(f"Results written to file: {concatenate_block_info.concatenation_result_filepath}", print_file_name=False)
+
             # end time
             end_time = time.time()
             iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
-            print(f"Time taken for this analysis: {iteration_time}")
+            print(f"Time taken for this analysis: {iteration_time}\n")
         
         print
 
@@ -652,13 +674,16 @@ class GEMpRFAnalysis:
         # data info
         measured_data_list, result_filepaths_list = cls.get_single_run_data_files_info(cfg)
         if len(measured_data_list) == 0:
-            Logger.print_red_message("No data files found. Exiting...", print_file_name=False)
+            Logger.print_red_message("No data files found. Please check the specified paths in your XML configuration file. Aborting now...", print_file_name=False)
             return
 
         GemWriteToFile.get_instance().write_array_to_h5(np.array(measured_data_list), variable_path=['input_data', 'measured_data_list'], append_to_existing_variable=False)
 
         # stimulus
-        stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
+        if cfg.bids['@enable'] == "True":
+            stimulus_info = GemBidsHandler.get_stimulus_info(stimulus_dir = cfg.stimulus['directory'], stimulus_name = cfg.bids['individual']['task'])
+        else:
+            stimulus_info = GemBidsHandler.get_non_bids_stimulus_info(cfg)
         stimulus = GEMpRFAnalysis.load_stimulus(cfg, stimulus_info)
 
         # M-Matrix
@@ -708,7 +733,7 @@ class GEMpRFAnalysis:
                 continue
 
             start_time = time.time()
-            Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}...", print_file_name=False)
+            Logger.print_green_message(f"Processing file ({file_processed_counter}/{len(measured_data_list)}): {measured_data_list[data_idx]}", print_file_name=False)
             valid_refined_prf_points_XY, r2_results, valid_refined_S_cpu = GEMpRFAnalysis.get_pRF_estimations(cfg, O_gpu, prf_space, prf_model, stimulus, prf_analysis, arr_2d_location_inv_M_cpu, measured_data_list[data_idx])
 
             # format results to JSON                
@@ -727,6 +752,7 @@ class GEMpRFAnalysis:
             # end_time = time.time()
             # iteration_time = end_time - start_time
             # iteration_times.append(iteration_time)
+            print(f"Time taken for this analysis: {iteration_time}\n")
 
             # # write the time taken for each iteration
             # csv_filepath = r"D:\results\gem-paper-simulated-data\analysis\05\BIDS\derivatives\time_records\iteration_times_151x151x16.csv"

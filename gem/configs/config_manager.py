@@ -151,7 +151,8 @@ class ConfigurationWrapper:
 
         # default hrf
         cls.default_hrf = cls.parse_attrs(cls.search_space.get("default_hrf"), {
-            "t": lambda v: tuple(map(float, v.strip("()").split(","))),  # expects a string like "(0, 45, 1)"
+            "t": lambda v: tuple(map(float, v.strip("()").split(","))),  # expects a string like "(0, 45)"
+            "TR": lambda v: float(v) if v.replace('.', '', 1).isdigit() else None,
             "peak_delay": float,
             "under_shoot_delay": float,
             "peak_disp": float,

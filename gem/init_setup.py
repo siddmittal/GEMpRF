@@ -9,7 +9,7 @@
 """
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import shutil
 from enum import Enum
@@ -82,7 +82,10 @@ def run_selected_program(selected_program, config_filepath):
 
     # copy the config file to the results folder, decide to overwrite or not the existing analysis results diretory
     if selected_program == SelectedProgram.GEMAnalysis:
-        result_dir = os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids["results_anaylsis_id"]["#text"]}')
+        if cfg.bids['@enable'] == "True":
+            result_dir = os.path.join(cfg.bids.get("basepath"), "derivatives", "prfanalyze-gem", f'analysis-{cfg.bids["results_anaylsis_id"]["#text"]}')
+        else:
+            result_dir = cfg.fixed_paths['results']['basepath']
         if os.path.exists(result_dir) and cfg.bids["results_anaylsis_id"].get("@overwrite").lower() == "false":
             shutil.move(result_dir, f'{result_dir}_backup-{datetime.datetime.now():%Y%m%d-%H%M%S}')
         shutil.copy(config_filepath, result_dir) if os.makedirs(result_dir, exist_ok=True) is None else None
@@ -129,69 +132,20 @@ def run_selected_program(selected_program, config_filepath):
         
 ################################################---------------------------------MAIN---------------------------------################################################
 # run the main function
-def run():      
+def init_setup(config_filepath = None):    
     # NOTE: Select the program to run
     # selected_program = SelectedProgram.GEMAnalysis
     selected_program = SelectedProgram.GEMSimulations
 
-    print ("Running the GEM pRF Analysis...")
-    # from gem.run.run_gem_prf_analysis import GEMpRFAnalysis
-    # GEMpRFAnalysis.run()    
-    # cProfile.run('GEMpRFAnalysis.run()', sort='cumulative')
+    print ("Running the GEM pRF Analysis...")     
 
-    # # Run the profiling
-    # profiler = cProfile.Profile()
-    # profiler.enable()
-
-    # Check if the user has provided a config filepath
-    has_user_provided_config = False
-    try:
-        config_filepath = sys.argv[1]
-        has_user_provided_config = True
-        if selected_program == SelectedProgram.GEMSimulations:
-            from raven.simulation.run.run_gem_simulations import GEMSimulationsRunner        
-    except IndexError:
-        pass
-
-    # ...Set config paths
-    if not has_user_provided_config:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        if selected_program == SelectedProgram.GEMSimulations:
-            from raven.simulation.run.run_gem_simulations import GEMSimulationsRunner
-            # NOTE: KDE computation Configs
-            config_filepath = os.path.join(script_dir, 'raven', 'configs', 'simulations_configs', '0002_kde_generation-voxel-394-specific_config.xml')
-            # config_filepath = os.path.join(script_dir, '..', 'configs', 'simulations_configs', '0001_kde_generation_config.xml') # simulations_config.xml # david_001_hcp_stimuli_simulations_config # 0001_kde_generation_config
-            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-001a_dataset-hcpret_task-bars_purpose-stimulicomparison_remarks-david.xml')
-            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-002a_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml')
-            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-003a_dataset-hcpret_task-barwedgering_purpose-stimulicomparison_remarks-david.xml')
-            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'ohbmBar_simulations_config_david_ohbm_simulations_wedge-bar.xml')
-            # config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'ohbmWedge_simulations_config_david_ohbm_simulations_wedge-bar.xml')
-            config_filepath = os.path.join(script_dir, 'raven', 'configs', 'stimuli_comparison_configs', 'num-002b_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml')
-
-            # NOTE: Stimuli Comparison Configs
-            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-001_dataset-hcpret_task-bars_purpose-stimulicomparison_remarks-david.xml') 
-            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-002_dataset-hcpret_task-wedgering_purpose-stimulicomparison_remarks-david.xml') 
-            # config_filepath = os.path.join(script_dir, '..', 'configs', 'stimuli_comparison_configs', 'num-003_dataset-hcpret_task-barwedgering_purpose-stimulicomparison_remarks-david.xml')     
-        elif selected_program == SelectedProgram.GEMAnalysis:
-            # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config - VerifyChanges.xml')
-            # config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config_retcomp17BIDS_wedgeLR-VerfiyDefaultGPU.xml')
-            config_filepath = os.path.join(os.path.dirname(__file__), 'gem', 'configs', 'analysis_configs', 'analysis_config.xml')
-        
-    # GEMSimulationsRunner.run(config_filepath, isSimulation=IS_SIMULATION)
     run_selected_program(selected_program, config_filepath)
 
-    # profiler.disable()
-
-    # # Specify the file name to save the profiling results
-    # output_file = '/ceph/mri.meduniwien.ac.at/projects/physics/fmri/data/tests/gem-paperD-simulated-data/analysis/05/BIDS/derivatives/prfanalyze-gem/analysis-05/sub-100000/ses-0n0/profiling_results.txt'#
-    # output_file = "/ceph/mri.meduniwien.ac.at/departments/physics/fmrilab/home/smittal/simulations/stimuli_comparison/profileing.txt"
-
-    # # Dump the profiling statistics to the specified file
-    # with open(output_file, 'w') as f:
-    #     stats = pstats.Stats(profiler, stream=f)
-    #     stats.sort_stats('cumulative')
-    #     stats.print_stats()
-
 if __name__ == "__main__":
-    run()
-    
+    default_config = os.path.join(os.path.dirname(__file__), 'configs', 'analysis_configs', 'analysis_config.xml')
+    print(f"\033[38;5;208mThe program will try to use the default config filepath:\n\033[0m  {default_config}")
+    choice = input("\033[38;5;208m\nDo you want to continue with this default config? [y/N]: \033[0m").strip().lower()
+    if choice != 'y':
+        print("Aborting program.")
+        sys.exit(0)    
+    init_setup(default_config)
