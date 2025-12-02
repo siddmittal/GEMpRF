@@ -130,6 +130,7 @@ def init_setup(config_filepath = None):
     run_selected_program(selected_program, config_filepath)
 
 if __name__ == "__main__":
+    __import__("utils.assert_no_gemprf").assert_no_gemprf.check_gemprf_not_installed()
     default_config = os.path.join(os.path.dirname(__file__), 'configs', 'analysis_configs', 'analysis_config.xml')
     print(f"\033[38;5;208mThe program will try to use the default config filepath:\n\033[0m  {default_config}")
     choice = input("\033[38;5;208m\nDo you want to continue with this default config? [y/N]: \033[0m").strip().lower()

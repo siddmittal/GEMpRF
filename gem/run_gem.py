@@ -51,6 +51,7 @@ def run(config_filepath=None):
     sys.exit(0)
 
 if __name__ == "__main__":
+    __import__("utils.assert_no_gemprf").assert_no_gemprf.check_gemprf_not_installed()
     parser = argparse.ArgumentParser(description="Run the GEM pRF Analysis.")
     parser.add_argument("config_filepath", type=str, help="Path to the XML configuration file")
     args = parser.parse_args()
