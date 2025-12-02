@@ -86,6 +86,7 @@ class GemBidsHandler:
 
         if append_to_basepath_list:
             base_path = os.path.join(base_path, *append_to_basepath_list)
+        base_path = base_path.replace("\\", "/")
 
         # quick summary of the BIDS tree being searched
         cls.__print_bids_tree_summary(base_path, file_extension, analysis_list, sub_list, ses_list, run_list, task_list, hemi_list, space_list, is_individual_run)
