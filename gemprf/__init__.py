@@ -20,4 +20,4 @@ __all__ = ["run", "__version__"]
 def run(*args, **kwargs):
     return _gem.run(*args, **kwargs)
 
-__version__ = "0.1.9"
+__version__ = "0.1.10"
