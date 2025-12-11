@@ -101,62 +101,67 @@ class GemBidsHandler:
                 analysis_path = os.path.join(analysis_dir_root, analysis_dir)
 
                 # subjects
-                for sub_dir_root, _, _ in os.walk(analysis_path):
-                    sub_dirs = next(os.walk(sub_dir_root))[1]
-                    sub_dirs[:] = [d for d in sub_dirs if d.startswith(('sub')) and (d.split('-')[1] in sub_list or 'all' in sub_list)]
-                    for sub_dir in sub_dirs:
-                        sub_path = os.path.join(sub_dir_root, sub_dir)
-                        
-                        # sessions for this subject
-                        for ses_dir_root, _, _ in os.walk(sub_path):
-                            ses_dirs = next(os.walk(ses_dir_root))[1]
-                            ses_dirs[:] = [d for d in ses_dirs if d.startswith(('ses')) and (d.split('-')[1] in ses_list or 'all' in ses_list)]
-                            for ses_dir in ses_dirs:
-                                ses_path = os.path.join(ses_dir_root, ses_dir)
+                sub_dir_root = analysis_path
+                if not os.path.isdir(sub_dir_root):
+                    continue                
+                sub_dirs = os.listdir(sub_dir_root)
+                sub_dirs[:] = [d for d in sub_dirs if d.startswith(('sub')) and os.path.isdir(os.path.join(sub_dir_root, d)) and (d.split('-')[1] in sub_list or 'all' in sub_list)]
+                for sub_dir in sub_dirs:
+                    sub_path = os.path.join(sub_dir_root, sub_dir)
+                    
+                    # sessions for this subject
+                    ses_dir_root = sub_path
+                    if not os.path.isdir(ses_dir_root):
+                        continue                    
+                    ses_dirs = os.listdir(ses_dir_root)
+                    ses_dirs[:] = [d for d in ses_dirs if d.startswith(('ses')) and os.path.isdir(os.path.join(ses_dir_root, d)) and (d.split('-')[1] in ses_list or 'all' in ses_list)]
+                    for ses_dir in ses_dirs:
+                        ses_path = os.path.join(ses_dir_root, ses_dir)
 
-                                # func
-                                for func_dir_root, _, _ in os.walk(ses_path):
-                                    func_dirs = next(os.walk(func_dir_root))[1]
-                                    func_dirs[:] = [d for d in func_dirs if d.startswith(('func'))]
+                        # func
+                        func_dir_root = ses_path
+                        if not os.path.isdir(func_dir_root):
+                            continue                        
+                        func_dirs = os.listdir(func_dir_root)
+                        func_dirs[:] = [d for d in func_dirs if d.startswith(('func'))]
+                        for func_dir in func_dirs:
+                            func_path = os.path.join(func_dir_root, func_dir)
+                            for _, _, files in os.walk(func_path):
 
-                                    for func_dir in func_dirs:
-                                        func_path = os.path.join(func_dir_root, func_dir)
-                                        for _, _, files in os.walk(func_path):
+                                # files level
+                                for file in files:
+                                    # .nii.gz or .gii
+                                    if (file.endswith(file_extension) or file_extension.lower() == 'both') \
+                                        and (file.endswith('_bold.nii.gz') or file.endswith('_bold.func.gii')):
+                                        # parts = file.split('_')
+                                        filename_without_ext = (file.split('.'))[0]
+                                        parts = filename_without_ext.split('_')
+                                        filename_info_dict = {}
+                                        for part in parts:
+                                            if '-' in part:
+                                                key, value = part.split('-', 1) # split only on the first hyphen
+                                                filename_info_dict[key] = value
+                                        
+                                        filename_info_dict['analysis'] = analysis_id # also add analysis id to the filename_parts
 
-                                            # files level
-                                            for file in files:
-                                                # .nii.gz or .gii
-                                                if (file.endswith(file_extension) or file_extension.lower() == 'both') \
-                                                    and (file.endswith('_bold.nii.gz') or file.endswith('_bold.func.gii')):
-                                                    # parts = file.split('_')
-                                                    filename_without_ext = (file.split('.'))[0]
-                                                    parts = filename_without_ext.split('_')
-                                                    filename_info_dict = {}
-                                                    for part in parts:
-                                                        if '-' in part:
-                                                            key, value = part.split('-', 1) # split only on the first hyphen
-                                                            filename_info_dict[key] = value
-                                                    
-                                                    filename_info_dict['analysis'] = analysis_id # also add analysis id to the filename_parts
+                                        sub_part = filename_info_dict.get('sub')
+                                        ses_part = filename_info_dict.get('ses')
+                                        task_part = filename_info_dict.get('task')
+                                        run_part = filename_info_dict.get('run')
+                                        hemi_part = filename_info_dict.get('hemi')
+                                        space_part = filename_info_dict.get('space', None) # if filename does not contain space part, consider it None
 
-                                                    sub_part = filename_info_dict.get('sub')
-                                                    ses_part = filename_info_dict.get('ses')
-                                                    task_part = filename_info_dict.get('task')
-                                                    run_part = filename_info_dict.get('run')
-                                                    hemi_part = filename_info_dict.get('hemi')
-                                                    space_part = filename_info_dict.get('space', None) # if filename does not contain space part, consider it None
-
-                                                    if ('all' in sub_list or sub_part in sub_list):
-                                                        if ('all' in ses_list or ses_part in ses_list):
-                                                            # # if ('all' in task_list or task_part in task_list):
-                                                            if (task_part in task_list):
-                                                                if ('all' in run_list or run_part in run_list):
-                                                                    if ('all' in hemi_list or hemi_part in hemi_list):
-                                                                        if (space_part is None or 'all' in space_list or space_part in space_list):
-                                                                            stimulus_info = cls.get_stimulus_info(stimuli_dir_path, task_part)
-                                                                            # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
-                                                                            matching_files_info.append(
-                                                                                tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info)))
+                                        if ('all' in sub_list or sub_part in sub_list):
+                                            if ('all' in ses_list or ses_part in ses_list):
+                                                # # if ('all' in task_list or task_part in task_list):
+                                                if (task_part in task_list):
+                                                    if ('all' in run_list or run_part in run_list):
+                                                        if ('all' in hemi_list or hemi_part in hemi_list):
+                                                            if (space_part is None or 'all' in space_list or space_part in space_list):
+                                                                stimulus_info = cls.get_stimulus_info(stimuli_dir_path, task_part)
+                                                                # NOTE: Replaced "func_dir_root" with "func_path" to get the correct path
+                                                                matching_files_info.append(
+                                                                    tuple((os.path.join(func_path, file), filename_info_dict, stimulus_info)))
         # BIDS Tree Diagnostics:
         try:
             diag = DiagnosticBidsTree.collect_bids_diagnostics(base_path)

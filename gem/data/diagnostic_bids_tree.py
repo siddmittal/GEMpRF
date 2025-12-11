@@ -45,21 +45,21 @@ class DiagnosticBidsTree:
             return diag
 
         # Level 1 → analysis-*
-        analyses = sorted([d for d in os.listdir(base_path) if d.startswith("analysis-")])
+        analyses = sorted([d for d in os.listdir(base_path) if d.startswith("analysis-") and os.path.isdir(os.path.join(base_path, d))])
         diag["analysis"] = analyses
 
         for analysis in analyses:
             a_path = os.path.join(base_path, analysis)
 
             # Level 2 → sub-*
-            subs = sorted([d for d in os.listdir(a_path) if d.startswith("sub-")])
+            subs = sorted([d for d in os.listdir(a_path) if d.startswith("sub-") and os.path.isdir(os.path.join(a_path, d))])
             diag["subjects"][analysis] = subs
 
             for sub in subs:
                 s_path = os.path.join(a_path, sub)
 
                 # Level 3 → ses-*
-                sessions = sorted([d for d in os.listdir(s_path) if d.startswith("ses-")])
+                sessions = sorted([d for d in os.listdir(s_path) if d.startswith("ses-") and os.path.isdir(os.path.join(s_path, d))])
                 diag["sessions"][(analysis, sub)] = sessions
 
                 for ses in sessions:
