@@ -418,8 +418,8 @@ class GEMpRFAnalysis:
                     task_specific_stimulus = GEMpRFAnalysis.load_stimulus(cfg, single_stimulus_info)
                     #...get Orthogonalization matrix
                     # NOTE: use the correct stimulus as the number of frames could be different!!!!!!!!!!!!!!
-                    ortho_matrix_dim = task_specific_stimulus.NumFrames if (not task_specific_stimulus.HighTemporalResolutionEnabled) else task_specific_stimulus.NumFramesDownsampled                    
-                    ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=ortho_matrix_dim) 
+                    ortho_matrix_dim = task_specific_stimulus.NumFrames if (not task_specific_stimulus.HighTemporalResolutionEnabled) else task_specific_stimulus.NumFramesDownsampled
+                    ortho_matrix = OrthoMatrix(nDCT=cfg.nDCT, num_frame_stimulus=ortho_matrix_dim) 
                     O_gpu = ortho_matrix.get_orthogonalization_matrix()
                     GemWriteToFile.get_instance().write_array_to_h5(O_gpu, variable_path=[f'model', f'{stimulus_task_name}', 'orthogonalization_matrix'], append_to_existing_variable=False)
 
@@ -620,7 +620,7 @@ class GEMpRFAnalysis:
 
         #...get Orthogonalization matrix
         ortho_matrix_dim = stimulus.NumFrames if (not stimulus.HighTemporalResolutionEnabled) else stimulus.NumFramesDownsampled
-        ortho_matrix = OrthoMatrix(nDCT=3, num_frame_stimulus=ortho_matrix_dim)
+        ortho_matrix = OrthoMatrix(nDCT=cfg.nDCT, num_frame_stimulus=ortho_matrix_dim)
         O_gpu = ortho_matrix.get_orthogonalization_matrix() # (cp.eye(stim_frames)  - cp.dot(R_gpu, R_gpu.T))
         GemWriteToFile.get_instance().write_array_to_h5(O_gpu, variable_path=['model', 'orthogonalization_matrix'], append_to_existing_variable=False)
 
