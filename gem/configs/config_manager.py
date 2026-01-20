@@ -161,6 +161,12 @@ class ConfigurationWrapper:
             "normalize": lambda v: v.lower() == "true"
         })
 
+        # nDCT
+        nDCT_node = cls.search_space.get("nDCT", {})
+        cls.nDCT = cls.parse_attrs(nDCT_node, {
+            "value": int
+        }).get("value", 1)  # default to 1 if not specified
+
         print("Successfully read the config file. ")
         if cls.optional_analysis_params['enable']:
             print(f"Analysis params from file: {', '.join(k for k,v in cls.optional_analysis_params.items() if isinstance(v, dict) and v.get('use_from_file', False)) or 'None'}")

@@ -22,11 +22,12 @@ class OrthoMatrix:
         if self.O_gpu is not None:
             return self.O_gpu
 
-        nDCT = 3
-        ndct = 2 * nDCT + 1
-        trends = np.zeros((self.num_frame_stimulus, np.max([np.sum(ndct), 1])))        
+        nDCT = self.nDCT
+        tc = np.linspace(0, 2.*np.pi, self.num_frame_stimulus)[:, None]
 
-        tc = np.linspace(0, 2.*np.pi, self.num_frame_stimulus)[:, None]        
+        # Generate (2 * nDCT + 1) cosine regressors:
+        # frequencies = [0, 0.5, 1.0, ..., nDCT]
+        # e.g., nDCT = 1  →  cos(0t), cos(0.5t), cos(1.0t)  →  3 DCTs        
         trends = np.cos(tc.dot(np.arange(0, nDCT + 0.5, 0.5)[None, :]))
 
         q, r = np.linalg.qr(trends) # QR decomposition
