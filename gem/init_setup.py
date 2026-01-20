@@ -39,13 +39,27 @@ def set_system_gpus(max_available_gpus):
     all_gpus_str = ','.join(map(str, all_gpus_list))
     os.environ["CUDA_VISIBLE_DEVICES"] = all_gpus_str
 
-def manage_gpus(cfg, max_available_gpus):    
+def manage_gpus(cfg, max_available_gpus):
     try:
         custom_default_gpu_id = int(cfg.gpu.get("default_gpu"))
-        additional_gpus = cfg.gpu["additional_available_gpus"]['gpu']
-        other_available_gpus = sorted(set(int(gpu_id) for gpu_id in additional_gpus if int(gpu_id) != custom_default_gpu_id))        
-    except (ValueError) as e:
-        raise ValueError("All GPU IDs must be integers.")
+    except Exception:
+        raise ValueError(
+            "Invalid GPU configuration: the 'default_gpu' value must be an integer. \nSee https://gemprf.github.io/")
+
+    # Optional additional GPUs
+    additional_node = cfg.gpu.get("additional_available_gpus")
+
+    if additional_node and "gpu" in additional_node:
+        additional_gpus = additional_node["gpu"]
+
+        # Handle single <gpu> vs multiple <gpu>
+        if not isinstance(additional_gpus, list):
+            additional_gpus = [additional_gpus]
+
+        other_available_gpus = sorted({int(g) for g in additional_gpus if int(g) != custom_default_gpu_id})
+    else:
+        other_available_gpus = []
+        max_available_gpus > 1 and Logger.print_blue_message("Note: Multi-GPU is supported, but none were specified. Using the specified default GPU.", print_file_name=False)
 
     user_specified_gpus_list = [custom_default_gpu_id] + other_available_gpus
 
