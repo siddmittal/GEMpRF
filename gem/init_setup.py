@@ -63,12 +63,11 @@ def manage_gpus(cfg, max_available_gpus):
 
     user_specified_gpus_list = [custom_default_gpu_id] + other_available_gpus
 
-    # Ensure all specified GPU IDs are within available range
+    # Sanity check
     if not all(0 <= gpu_id < max_available_gpus for gpu_id in user_specified_gpus_list):
-        raise ValueError(f"GPU IDs must be less than the number of available GPUs ({max_available_gpus}).")
+        raise ValueError(f"GPU IDs must be in range [0, {max_available_gpus - 1}].")
 
-    all_gpus_str = ','.join(map(str, user_specified_gpus_list))
-    os.environ["CUDA_VISIBLE_DEVICES"] = all_gpus_str
+    os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, user_specified_gpus_list))
 
 
 def run_selected_program(selected_program, config_filepath):
