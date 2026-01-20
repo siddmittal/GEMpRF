@@ -6,7 +6,7 @@
 	  "@Paper Title	:	GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis"
 -->
 
-<root version="0.1.10">
+<root version="0.1.11">
   <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
   
   <!-- Stimulus data -->
