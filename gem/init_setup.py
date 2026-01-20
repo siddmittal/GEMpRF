@@ -30,6 +30,9 @@ from gem.utils.gem_write_to_file import GemWriteToFile
 from gem.utils.logger import Logger
 from gem.utils.gem_h5_file_handler import H5FileManager
 
+# gemprf wrapper import
+from gemprf import __version__
+
 class SelectedProgram(Enum):
     GEMAnalysis = 0
     GEMSimulations = 1
@@ -72,6 +75,17 @@ def manage_gpus(cfg, max_available_gpus):
 
 def run_selected_program(selected_program, config_filepath):
     cfg = GEMpRFAnalysis.load_config(config_filepath=config_filepath) # load default config
+
+    # NOTE: match versions
+    config_file_version = cfg.config_data["@version"]
+    if config_file_version != __version__:
+        Logger.print_red_message(
+            f"Version mismatch: config={config_file_version}, GEMpRF={__version__}. "
+            "\nDownload matching versions at: https://gemprf.github.io/",
+            print_file_name=False
+        )
+        sys.exit(1)        
+    print(f"GEMpRF version: {__version__}")
 
     # read user defined spatial points, if any
     spatial_points_xy = None

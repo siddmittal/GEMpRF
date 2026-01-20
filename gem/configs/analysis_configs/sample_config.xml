@@ -1,0 +1,159 @@
+<!-- 
+    "@Author  		:   Siddharth Mittal",
+    "@Contact 		:   siddharth.mittal@meduniwien.ac.at",
+    "@License 		:   (C)Copyright 2024 - 2025, Medical University of Vienna",
+	  "@Cite DOI 		: 	https://doi.org/10.1016/j.media.2025.103891",
+	  "@Paper Title	:	GPU-Empowered Mapping of Population Receptive Fields for Large-Scale fMRI Analysis"
+-->
+
+<root version="0.1.10">
+  <refine_fitting enable="True" refinefit_on_gpu="True"/> <!-- Execute refine fitting on GPU if sufficient GPU memory is available -->
+  
+  <!-- Stimulus data -->
+  <stimulus comment="Only in Nifti Format">
+
+    <!-- File path for stimulus directory -->
+    <directory>Path/to/data/BIDS/stimuli</directory>	
+    <visual_field>8</visual_field> <!-- Visual field Radius -->
+    <width>101</width>
+    <height>101</height>
+    <binarization enable="True" threshold="0"/> <!-- stimulus will be binarized if enabled, all values above threshold will be set to 1 and below to 0 -->
+    
+    <!-- Compute model signals with high-res stimulus then downsample -->
+    <!-- "num_frames_downsampled" = your fMRI timecourse length -->
+    <!-- "slice_time_ref" for details see https://www.alivelearn.net/?p=1037 -->
+    <high_temporal_resolution enable="false" num_frames_downsampled="305" slice_time_ref="0.5"/>
+  </stimulus>
+
+  <!-- Input Data -->
+  <input_datasrc>
+
+	<!-- Set to "True" if the input data is organized in BIDS format, select "individual" or "concatenated" run type -->
+    <BIDS enable="True" run_type="individual" comment="options are individual/concatenated">
+	
+      <basepath>Path/to/data/BIDS</basepath>
+      <append_to_basepath>derivatives, fmriprep</append_to_basepath>
+
+      <!-- Directory name for results; backups created with timestamp if overwrite="True" -->
+      <results_anaylsis_id overwrite="False">GEMDataAnalysisResults</results_anaylsis_id>
+
+      <!-- NOTE: Case sensitive, provide the exact values!!!
+           For the analysis, sub, ses, task, run, hemi,
+           either provide comma separated values or specify "all"
+           Sample: <analysis>01, 02</analysis> or <analysis>all</analysis>
+      -->
+      <analysis>01</analysis>
+      <sub>all</sub>
+      <hemi>all</hemi>
+      <space comment="e.g. fsaverage/fsnative/T1w or all">fsnative</space>
+	  
+	  <!-- IMPORTANT: volumetric files will be flattend, and only files ending with '_bold.nii.gz' or '_bold.func.gii' will be processed -->
+      <input_file_extension comment="options are .nii.gz/.gii/both">.gii</input_file_extension>
+        
+      <!-- INDIVIDUAL Task/stimulus Analysis -->
+      <individual>
+        <task>fixedbar</task> <!-- ONLY one value is allowed -->
+        <ses>all</ses>        <!-- comma separated values or "all" -->
+        <run>all</run>        <!-- comma separated values or "all" -->
+      </individual>
+
+      <!-- CONCATENATED Analysis -->
+      <concatenated>
+
+        <concatenate_item>
+          <ses>01</ses> 		<!-- ONLY one value is allowed -->
+          <task>fixedbar</task>	<!-- ONLY one value is allowed -->
+          <run>1</run> 			<!-- ONLY one value is allowed -->
+        </concatenate_item>
+
+        <concatenate_item>
+          <ses>01</ses>
+          <task>fixedbar</task>
+          <run>2</run>
+        </concatenate_item>
+
+        <concatenate_item>
+          <ses>01</ses>
+          <task>fixedbar</task>
+          <run>3</run>
+        </concatenate_item>
+
+      </concatenated>
+
+    </BIDS>
+
+    <!-- OR, make Bids False and specify directly single/multiple filepaths -->
+    <fixed_paths>
+      <stimulus_filepath>D:/GEMpRF-DemoKit/example_data/stimuli/task-bar_apertures.nii.gz</stimulus_filepath>
+      <measured_data_filepath comment="Add one or more measured-data filepaths here. Use a separate filepath block for each entry.">
+        <filepath>path/to/data/tests/gem_generic_test/BIDS/sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+        <filepath>path/to/data/tests/gem_generic_test/BIDS/sub-001/ses-3n2/func/sub-001_ses-3n2_task-prf_acq-normal_run-01_bold.nii.gz</filepath>
+      </measured_data_filepath>
+      <results>
+
+        <!--  directory for results  -->
+        <basepath>path/to/data/tests/gem_generic_test/derivatives/prfanalyze-gem/analysis-01/sub-001/ses-3n2/</basepath>
+        
+        <!--  Custom result filename postfix  -->
+        <custom_filename_postfix>-sample</custom_filename_postfix>
+        
+        <!--  Flag to prepend date  -->
+        <prepend_date>True</prepend_date>
+        
+      </results>
+
+    </fixed_paths>
+
+  </input_datasrc>
+
+  <!-- Analysis Model -->
+  <pRF_model>
+    <model>2d_gaussian</model> <!-- 2d_gaussian, (DoG, CSS not avaiable at the moment) -->
+  </pRF_model>
+
+  <!-- Measured data section -->
+  <measured_data>
+    <batches>500</batches>
+  </measured_data>
+
+  <!-- GPU configuration -->
+  <gpu>
+
+    <!-- Default GPU -->
+    <default_gpu>0</default_gpu>
+
+    <!-- Additional available GPUs -->
+    <additional_available_gpus>
+      <gpu>1</gpu>
+      <gpu>2</gpu>
+      <gpu>3</gpu>
+    </additional_available_gpus>
+
+  </gpu>
+
+  <!-- Search space information -->
+  <search_space write_debug_info="false">
+
+    <!-- (OPTIONAL) Use custom provided HRF/pRF sizes/grid -->
+    <optional_analysis_params enable="False" filepath="DIR_PATH/analysis_additional_params.h5">
+      <hrf use_from_file="True" key="analysis_params/hrf_values"/>
+      <sigmas use_from_file="True" key="analysis_params/sigmas"/>
+      <spatial_grid_xy use_from_file="True" key="analysis_params/spatial_grid_xy"/>
+    </optional_analysis_params>
+
+    <!-- (DEFAULT) parameters when optional_analysis_params=False -->
+    <!-- SPM HRF parameters -->
+    <default_hrf t="(0, 45)" TR="1.0" peak_delay="6.16" under_shoot_delay="12.0"
+                 peak_disp="0.85" under_disp="0.82" peak_to_undershoot="2.15"
+                 normalize="true"/>
+                
+    <default_spatial_grid visual_field_radius="12"
+                          num_horizontal_prfs="51"
+                          num_vertical_prfs="51"/>
+
+    <default_sigmas num_sigmas="8" min_sigma="0.5" max_sigma="5"/>
+    <nDCT value="1" comment="DCT bases to account for low frequency drift. Generate (2 * nDCT + 1) cosine regressors"/>
+
+  </search_space>
+
+</root>
