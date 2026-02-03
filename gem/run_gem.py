@@ -48,7 +48,6 @@ def run(config_filepath=None):
 
     init_setup(config_filepath=config_filepath)
     print(f"\nComplete Time taken: {datetime.datetime.now() - start_time}")
-    sys.exit(0)
 
 if __name__ == "__main__":
     __import__("utils.assert_no_gemprf").assert_no_gemprf.check_gemprf_not_installed()
