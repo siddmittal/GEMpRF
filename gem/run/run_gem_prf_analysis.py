@@ -70,15 +70,15 @@ class GEMpRFAnalysis:
             if cfg.default_hrf["TR"] is None:                
                 TR = stimulus.Header['pixdim'][4]  # now we need to get TR from stimulus # assuming 4th dimension is time
                 Logger.print_yellow_message(f"\nSetting HRF 't' step value to stimulus ({stimulus.StimulusTaskName}) TR: {TR:.3f} seconds.", print_file_name=False)
-                cfg.default_hrf["t"] = (*cfg.default_hrf["t"][:2], TR)
             else:
                 TR = cfg.default_hrf["TR"]
             
             # spm "t" (start, stop, step/TR)
-            cfg.default_hrf["t"] = (*cfg.default_hrf["t"], TR)
+            t_start, t_stop = cfg.default_hrf["t"]
+            hrf_t = (t_start, t_stop, TR)
 
             # generate HRF curve using SPM parameters
-            hrf_params = (np.arange(*cfg.default_hrf["t"]),
+            hrf_params = (np.arange(*hrf_t),
                           cfg.default_hrf["peak_delay"], 
                           cfg.default_hrf["under_shoot_delay"], 
                           cfg.default_hrf["peak_disp"], 
